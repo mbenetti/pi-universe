@@ -48,7 +48,7 @@ interface Discovered {
 interface SourceGroup {
 	source: string;
 	commands: Discovered[];
-	skills: string[];
+	skills: Discovered[];
 	agents: Discovered[];
 }
 
@@ -94,21 +94,33 @@ function scanCommands(dir: string): Discovered[] {
 	return items;
 }
 
-function scanSkills(dir: string): string[] {
+function scanSkills(dir: string): Discovered[] {
 	if (!existsSync(dir)) return [];
-	const names: string[] = [];
+	const items: Discovered[] = [];
 	try {
 		for (const entry of readdirSync(dir)) {
 			const skillFile = join(dir, entry, "SKILL.md");
 			const flatFile = join(dir, entry);
 			if (existsSync(skillFile) && statSync(skillFile).isFile()) {
-				names.push(entry);
+				const raw = readFileSync(skillFile, "utf-8");
+				const { description, body } = parseFrontmatter(raw);
+				items.push({
+					name: entry,
+					description: description || body.split("\n").find((l) => l.trim())?.trim() || "",
+					content: raw,
+				});
 			} else if (entry.endsWith(".md") && statSync(flatFile).isFile()) {
-				names.push(basename(entry, ".md"));
+				const raw = readFileSync(flatFile, "utf-8");
+				const { description, body } = parseFrontmatter(raw);
+				items.push({
+					name: basename(entry, ".md"),
+					description: description || body.split("\n").find((l) => l.trim())?.trim() || "",
+					content: raw,
+				});
 			}
 		}
 	} catch {}
-	return names;
+	return items;
 }
 
 function scanAgents(dir: string): Discovered[] {
@@ -130,61 +142,76 @@ function scanAgents(dir: string): Discovered[] {
 }
 
 export default function (pi: ExtensionAPI) {
+	// ── Scan + register at init time (top-level, synchronous) ────────────────
+	//
+	// registerCommand() must be called synchronously during extension load —
+	// the same rule that applies to registerTool() and registerShortcut().
+	// Calling it inside session_start lands too late and the commands are
+	// silently dropped. Use process.cwd() here; Pi is always launched from
+	// the project root so it is identical to ctx.cwd at runtime.
+	//
+	const home = homedir();
+	const cwd = process.cwd();
+	const providers = ["claude", "gemini", "codex"];
+	const groups: SourceGroup[] = [];
+
+	for (const p of providers) {
+		for (const [dir, label] of [
+			[join(cwd, `.${p}`), `.${p}`],
+			[join(home, `.${p}`), `~/.${p}`],
+		] as const) {
+			const commands = scanCommands(join(dir, "commands"));
+			const skills = scanSkills(join(dir, "skills"));
+			const agents = scanAgents(join(dir, "agents"));
+
+			if (commands.length || skills.length || agents.length) {
+				groups.push({ source: label, commands, skills, agents });
+			}
+		}
+	}
+
+	// Also scan .pi/agents/ (pi-vs-cc pattern)
+	const localAgents = scanAgents(join(cwd, ".pi", "agents"));
+	if (localAgents.length) {
+		groups.push({ source: ".pi/agents", commands: [], skills: [], agents: localAgents });
+	}
+
+	// Register commands + skills once — never re-registered on /new
+	const seenCmds = new Set<string>();
+	for (const g of groups) {
+		for (const cmd of g.commands) {
+			if (seenCmds.has(cmd.name)) continue;
+			seenCmds.add(cmd.name);
+			pi.registerCommand(cmd.name, {
+				description: `[${g.source}] ${cmd.description}`.slice(0, 120),
+				handler: async (args) => {
+					pi.sendUserMessage(expandArgs(cmd.content, args || ""));
+				},
+			});
+		}
+		for (const skill of g.skills) {
+			const cmdName = `skill:${skill.name}`;
+			if (seenCmds.has(cmdName)) continue;
+			seenCmds.add(cmdName);
+			pi.registerCommand(cmdName, {
+				description: `[${g.source}] ${skill.description}`.slice(0, 120),
+				handler: async (args) => {
+					const task = args?.trim();
+					pi.sendUserMessage(task ? `${skill.content}\n\nTask: ${task}` : skill.content);
+				},
+			});
+		}
+	}
+
+	// ── Boot notification (session_start, fine for UI calls) ─────────────────
+
 	pi.on("session_start", async (_event, ctx) => {
 		applyExtensionDefaults(import.meta.url, ctx);
-		const home = homedir();
-		const cwd = ctx.cwd;
-		const providers = ["claude", "gemini", "codex"];
-		const groups: SourceGroup[] = [];
-
-		for (const p of providers) {
-			for (const [dir, label] of [
-				[join(cwd, `.${p}`), `.${p}`],
-				[join(home, `.${p}`), `~/.${p}`],
-			] as const) {
-				const commands = scanCommands(join(dir, "commands"));
-				const skills = scanSkills(join(dir, "skills"));
-				const agents = scanAgents(join(dir, "agents"));
-
-				if (commands.length || skills.length || agents.length) {
-					groups.push({ source: label, commands, skills, agents });
-				}
-			}
-		}
-
-		// Also scan .pi/agents/ (pi-vs-cc pattern)
-		const localAgents = scanAgents(join(cwd, ".pi", "agents"));
-		if (localAgents.length) {
-			groups.push({ source: ".pi/agents", commands: [], skills: [], agents: localAgents });
-		}
-
-		// Register commands
-		const seenCmds = new Set<string>();
-		let totalCommands = 0;
-		let totalSkills = 0;
-		let totalAgents = 0;
-
-		for (const g of groups) {
-			totalSkills += g.skills.length;
-			totalAgents += g.agents.length;
-			
-			for (const cmd of g.commands) {
-				if (seenCmds.has(cmd.name)) continue;
-				seenCmds.add(cmd.name);
-				totalCommands++;
-				pi.registerCommand(cmd.name, {
-					description: `[${g.source}] ${cmd.description}`.slice(0, 120),
-					handler: async (args) => {
-						pi.sendUserMessage(expandArgs(cmd.content, args || ""));
-					},
-				});
-			}
-		}
 
 		if (groups.length === 0) return;
 
-				// We delay slightly so it doesn't get instantly overwritten by system-select's default startup notify
-						setTimeout(() => {
+		// We delay slightly so it doesn't get instantly overwritten by system-select's default startup notify
+		setTimeout(() => {
 			if (!ctx.hasUI) return;
 			// Reduce max width slightly to ensure it never overflows and breaks the next line
 			const width = Math.min((process.stdout.columns || 80) - 4, 100); 
@@ -215,7 +242,7 @@ export default function (pi: ExtensionAPI) {
 				if (g.skills.length) {
 					items.push(
 						yellow("/skill:") +
-						g.skills.map((s) => cyan(s)).join(yellow(", /skill:"))
+						g.skills.map((s) => cyan(s.name)).join(yellow(", /skill:"))
 					);
 				}
 				if (g.agents.length) {
