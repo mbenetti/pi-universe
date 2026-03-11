@@ -60,9 +60,11 @@ export default function (pi: ExtensionAPI) {
 
 	pi.on("session_start", async (_event, ctx) => {
 		applyExtensionDefaults(import.meta.url, ctx);
-		const rulesPath = path.join(ctx.cwd, ".pi", "damage-control-rules.yaml");
+		const projectRulesPath = path.join(ctx.cwd, ".pi", "damage-control-rules.yaml");
+		const globalRulesPath = path.join(os.homedir(), ".pi", "damage-control-rules.yaml");
+		const rulesPath = fs.existsSync(projectRulesPath) ? projectRulesPath : fs.existsSync(globalRulesPath) ? globalRulesPath : null;
 		try {
-			if (fs.existsSync(rulesPath)) {
+			if (rulesPath) {
 				const content = fs.readFileSync(rulesPath, "utf8");
 				const loaded = yamlParse(content) as Partial<Rules>;
 				rules = {
@@ -71,9 +73,10 @@ export default function (pi: ExtensionAPI) {
 					readOnlyPaths: loaded.readOnlyPaths || [],
 					noDeletePaths: loaded.noDeletePaths || [],
 				};
-				ctx.ui.notify(`🛡️ Damage-Control: Loaded ${rules.bashToolPatterns.length + rules.zeroAccessPaths.length + rules.readOnlyPaths.length + rules.noDeletePaths.length} rules.`);
+				const source = rulesPath === projectRulesPath ? "project" : "global";
+				ctx.ui.notify(`🛡️ Damage-Control: Loaded ${rules.bashToolPatterns.length + rules.zeroAccessPaths.length + rules.readOnlyPaths.length + rules.noDeletePaths.length} rules (${source}).`);
 			} else {
-				ctx.ui.notify("🛡️ Damage-Control: No rules found at .pi/damage-control-rules.yaml");
+				ctx.ui.notify("🛡️ Damage-Control: No rules found at .pi/damage-control-rules.yaml (project or global)");
 			}
 		} catch (err) {
 			ctx.ui.notify(`🛡️ Damage-Control: Failed to load rules: ${err instanceof Error ? err.message : String(err)}`);
