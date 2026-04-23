@@ -4,6 +4,10 @@
   "type": "module",
   "description": "Pi Coding Agent extension playground",
   "dependencies": {
+    "langfuse-node": "^3.38.20",
     "yaml": "^2.8.0"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
   }
 }

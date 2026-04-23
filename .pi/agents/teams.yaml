@@ -1,31 +1,17 @@
-full:
-  - scout
+research-team:
   - planner
-  - builder
-  - reviewer
-  - documenter
-  - red-team
+  - researcher
+  - scientist
+  - section-writer
+  - section-critic
+  - research-manager
 
-plan-build:
+literature-team:
   - planner
-  - builder
-  - reviewer
+  - researcher
+  - scientist
 
-info:
-  - scout
-  - documenter
-  - reviewer
-
-frontend:
+report-writing-team:
   - planner
-  - builder
-  - bowser
-
-pi-pi:
-  - ext-expert
-  - theme-expert
-  - skill-expert
-  - config-expert
-  - tui-expert
-  - prompt-expert
-  - agent-expert
+  - section-writer
+  - section-critic

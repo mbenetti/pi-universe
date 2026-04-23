@@ -1,0 +1,59 @@
+# justfile - Development tasks for research agent setup
+#
+# Usage: just <task>
+
+# Default task - show help
+default:
+    @just --list
+
+# Install MCP research extension
+install-mcp:
+    @echo "Installing MCP servers..."
+    npx -y @anthropic/mcp-server-zotero --help || true
+    npx -y @modelcontextprotocol/server-google-scholar --help || true
+    @echo "✅ MCP servers ready"
+
+# Setup research workflow skill
+setup-skill:
+    @echo "Setting up research workflow skill with uv..."
+    chmod +x .pi/skills/research-workflow/scripts/*.sh
+    .pi/skills/research-workflow/scripts/setup.sh || echo "⚠ Manual setup may be needed"
+
+# Run the research agent
+run-agent:
+    @echo "Starting research agent team..."
+    pi --append-system-prompt "$(cat .pi/agents/research-manager.md)"
+
+# Run just the researcher agent
+run-researcher:
+    pi --append-system-prompt "$(cat .pi/agents/researcher.md)"
+
+# Create a test research session
+test-session:
+    @echo "Starting test research session..."
+    pi -e extensions/mcp-research.ts --session test
+
+# Show available agents
+show-agents:
+    @echo "Available agents:"
+    @ls -la .pi/agents/*.md 2>/dev/null | awk '{print " - " $$NF}' | sed 's/.md//' || echo " No agents found"
+    @echo ""
+    @echo "Teams:"
+    @cat .pi/agents/teams.yaml 2>/dev/null || echo " No teams configured"
+
+# Validate all files
+validate:
+    @echo "Validating configuration files..."
+    @python3 -c "import yaml; yaml.safe_load(open('.pi/agents/teams.yaml'))" 2>/dev/null && echo " ✅ teams.yaml valid" || echo " ❌ teams.yaml invalid"
+    @test -f .pi/skills/research-workflow/SKILL.md && echo " ✅ SKILL.md exists" || echo " ❌ SKILL.md missing"
+    @test -d .pi/prompts && echo " ✅ prompts directory exists" || echo " ❌ prompts directory missing"
+    @uv --version > /dev/null 2>&1 && echo " ✅ uv installed" || echo " ⚠ uv not found"
+    @echo "Done!"
+
+# Check uv environment
+check-uv:
+    @echo "Checking uv environment..."
+    @uv --version && echo "" || echo "⚠ uv not installed"
+    @echo ""
+    @echo "Scripts now use 'uv run --with <package>' for all Python dependencies."
+    @echo "No global Python packages needed - packages are fetched on-demand."

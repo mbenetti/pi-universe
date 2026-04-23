@@ -20,7 +20,7 @@ export default function (pi: ExtensionAPI) {
 				const model = ctx.model?.id || "no-model";
 				const usage = ctx.getContextUsage();
 				const pct = (usage && usage.percent !== null) ? usage.percent : 0;
-				const filled = Math.round(pct / 10);
+				const filled = Math.max(0, Math.min(10, Math.round(pct / 10)));
 				const bar = "#".repeat(filled) + "-".repeat(10 - filled);
 
 				const left = theme.fg("dim", ` ${model}`);

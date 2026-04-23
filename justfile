@@ -51,7 +51,16 @@ ext-agent-team:
 ext-system-select:
     pi -e extensions/system-select.ts -e extensions/minimal.ts -e extensions/theme-cycler.ts
 
-# 12. Launch with Damage-Control safety auditing
+# 12. Research Pipeline: two-phase research (abstracts → sub-agent deep reading)
+#     Prevents context window explosion by never dumping full papers into main context
+ext-research-pipeline:
+    pi -e extensions/research-pipeline.ts -e extensions/theme-cycler.ts
+
+# 13. Research Tree: tree-style dashboard with activity icons and metadata
+ext-research-tree:
+    pi -e extensions/research-tree.ts -e extensions/theme-cycler.ts
+
+# 13. Launch with Damage-Control safety auditing
 ext-damage-control:
     pi -e extensions/damage-control.ts -e extensions/minimal.ts -e extensions/theme-cycler.ts
 
@@ -92,7 +101,7 @@ open +exts:
 # Open every extension in its own terminal window
 all:
     just open pi
-    just open pure-focus 
+    just open pure-focus
     just open minimal theme-cycler
     just open cross-agent minimal
     just open purpose-gate minimal
@@ -105,3 +114,4 @@ all:
     just open damage-control minimal theme-cycler
     just open agent-chain theme-cycler
     just open pi-pi theme-cycler
+    just open research-pipeline

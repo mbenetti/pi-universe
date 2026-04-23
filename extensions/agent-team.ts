@@ -5,6 +5,19 @@
  * to specialist agents via the `dispatch_agent` tool. Each specialist
  * maintains its own Pi session for cross-invocation memory.
  *
+ * DELEGATION MODEL: Only the root dispatcher has `dispatch_agent`. When
+ * a spawned agent needs to delegate, it outputs a structured `[DELEGATE]`
+ * block. The dispatcher intercepts these, executes the delegated tasks,
+ * and appends results back to the requesting agent's output.
+ *
+ * Delegation block format (agents MUST use this to request delegation):
+ * ```
+ * [DELEGATE:researcher]
+ * Search for recent papers about transformer attention mechanisms.
+ * Return titles, authors, abstracts.
+ * [/DELEGATE]
+ * ```
+ *
  * Loads agent definitions from agents/*.md, .claude/agents/*.md, .pi/agents/*.md.
  * Teams are defined in .pi/agents/teams.yaml — on boot a select dialog lets
  * you pick which team to work with. Only team members are available for dispatch.
@@ -52,6 +65,36 @@ interface AgentState {
 
 function displayName(name: string): string {
 	return name.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+}
+
+// ── Delegation Block Parser ──────────────────────
+// Parses [DELEGATE:agent_name]...[/DELEGATE] blocks from agent output.
+// Returns cleaned output (blocks removed) and array of delegation requests.
+interface DelegationRequest {
+	agent: string;
+	task: string;
+}
+
+function parseDelegationBlocks(
+	output: string,
+):
+	| { cleaned: string; delegations: DelegationRequest[] }
+	| { cleaned: string; delegations: DelegationRequest[] } {
+	const delegations: DelegationRequest[] = [];
+	const regex = /\[DELEGATE:([^\]]+)\]\n?([\s\S]*?)\n?\[\/DELEGATE\]/g;
+	let cleaned = output;
+	let match;
+
+	while ((match = regex.exec(output)) !== null) {
+		const agent = match[1].trim().toLowerCase();
+		const task = match[2].trim();
+		delegations.push({ agent, task });
+	}
+
+	// Remove all delegation blocks from output
+	cleaned = output.replace(/\[DELEGATE:[^\]]+\]\n?([\s\S]*?)\n?\[\/DELEGATE\]/g, "").trim();
+
+	return { cleaned, delegations };
 }
 
 // ── Teams YAML Parser ────────────────────────────
@@ -297,11 +340,19 @@ export default function (pi: ExtensionAPI) {
 	}
 
 	// ── Dispatch Agent (returns Promise) ─────────
+	// Handles [DELEGATE:agent]...[/DELEGATE] blocks in output:
+	// 1. Run the agent subprocess
+	// 2. Parse any delegation blocks from the output
+	// 3. Process each delegation by dispatching to the target agent
+	// 4. Append results back and re-check for more delegations (max depth)
+	// 5. Return final cleaned output
 
-	function dispatchAgent(
+	async function dispatchAgent(
 		agentName: string,
 		task: string,
 		ctx: any,
+		maxDepth: number = 5,
+		depth: number = 0,
 	): Promise<{ output: string; exitCode: number; elapsed: number }> {
 		const key = agentName.toLowerCase();
 		const state = agentStates.get(key);
@@ -364,7 +415,7 @@ export default function (pi: ExtensionAPI) {
 
 		const textChunks: string[] = [];
 
-		return new Promise((resolve) => {
+		const result = await new Promise<{ output: string; exitCode: number; elapsed: number }>((resolve) => {
 			const proc = spawn("pi", args, {
 				stdio: ["ignore", "pipe", "pipe"],
 				env: { ...process.env },
@@ -462,6 +513,65 @@ export default function (pi: ExtensionAPI) {
 				});
 			});
 		});
+
+		// ── Process Delegation Blocks ─────────────────────
+		// After the agent finishes, parse any [DELEGATE:agent] blocks
+		// and dispatch them, appending results back
+
+		if (depth >= maxDepth) {
+			return {
+				output: `[DELEGATION DEPTH EXCEEDED (${maxDepth}). Agent may have unresolved delegation requests.]\n\n${result.output}`,
+				exitCode: result.exitCode,
+				elapsed: result.elapsed,
+			};
+		}
+
+		const { cleaned: cleanedOutput, delegations } = parseDelegationBlocks(result.output);
+
+		if (delegations.length === 0) {
+			return { output: cleanedOutput, exitCode: result.exitCode, elapsed: result.elapsed };
+		}
+
+		// Process each delegation request
+		const delegationResults: string[] = [];
+		let totalDelegationElapsed = 0;
+
+		for (const { agent: delegAgent, task: delegTask } of delegations) {
+			// Check if the target agent exists in the team
+			const targetKey = delegAgent.toLowerCase();
+			if (!agentStates.has(targetKey)) {
+				delegationResults.push(
+					`[DELEGATION FAILED: Agent "${delegAgent}" not found in team. Available: ${Array.from(agentStates.values()).map(s => s.def.name).join(", ")}]`
+				);
+				continue;
+			}
+
+			// Dispatch the delegated task
+			ctx.ui.notify(`[Delegation] ${displayName(state.def.name)} → ${delegAgent}: ${delegTask.slice(0, 50)}...`, "info");
+			const delegResult = await dispatchAgent(delegAgent, delegTask, ctx, maxDepth, depth + 1);
+			totalDelegationElapsed += delegResult.elapsed;
+
+			if (delegResult.exitCode === 0) {
+				delegationResults.push(
+					`[DELEGATION RESULT (${delegAgent}) - ${Math.round(delegResult.elapsed / 1000)}s]\n${delegResult.output}`
+				);
+			} else {
+				delegationResults.push(
+					`[DELEGATION ERROR (${delegAgent})]: ${delegResult.output.slice(0, 500)}`
+				);
+			}
+		}
+
+		// Append delegation results to cleaned output
+		const combinedOutput =
+			cleanedOutput +
+			(delegationResults.length > 0 ? "\n\n--- Delegated Task Results ---\n\n" + delegationResults.join("\n\n") : "");
+
+		return {
+			output: combinedOutput,
+			exitCode: result.exitCode,
+			elapsed: result.elapsed + totalDelegationElapsed,
+		};
 	}
 
 	// ── dispatch_agent Tool (registered at top level) ──
@@ -636,7 +746,68 @@ export default function (pi: ExtensionAPI) {
 
 		const teamMembers = Array.from(agentStates.values()).map(s => displayName(s.def.name)).join(", ");
 
-		return {
+		const workflowExamples = [
+		"## WORKFLOW: Plan → Delegate → Synthesize",
+		"",
+		"For research or multi-step tasks, follow this workflow:",
+		"",
+		"1. **Plan** — Break the task into clear sub-tasks. Choose the right agent for each.",
+		"2. **Delegate** — Dispatch each sub-task using dispatch_agent. Wait for results.",
+		"3. **Chain** — Some tasks depend on others. Order your dispatches correctly.",
+		"4. **Synthesize** — When all parts are done, compile results into a coherent output.",
+		"",
+		"### Example Research Workflow",
+		"```",
+		"1. dispatch_agent('researcher', 'Search for papers about X. Return titles and abstracts.')",
+		"   → Get search results",
+		"2. dispatch_agent('scientist', 'Analyze these papers critically...')",
+		"   → Get analysis",
+		"3. dispatch_agent('section-writer', 'Write the Methodology section...')",
+		"   → Get section draft",
+		"4. dispatch_agent('research-manager', 'Write abstract and conclusions...')",
+		"   → Get framework sections",
+		"5. Compile all results into final report",
+		"```",
+		"",
+		"## How Agent Delegation Works",
+		"",
+		"Specialist agents (research-manager, section-writer) can use [DELEGATE:agent_name] blocks",
+		"in their output to request additional work. The dispatcher will:",
+		"1. Parse these blocks from the agent's output",
+		"2. Dispatch the delegated task to the target agent",
+		"3. Append the result back to the requesting agent's output",
+		"4. Return the combined result",
+		"",
+		"### Example Delegation from a Research-Manager",
+		"```",
+		"User: 'Write a research report on transformers'",
+		"",
+		"1. research-manager dispatches to researcher:",
+		"   dispatch_agent('researcher', 'Search for transformer papers...')",
+		"   → researcher returns papers",
+		"",
+		"2. research-manager uses [DELEGATE] block in its output:",
+		"   [DELEGATE:section-writer]",
+		"   Write the Methodology section based on these papers...",
+		"   [/DELEGATE]",
+		"",
+		"3. Dispatcher intercepts the [DELEGATE] block, dispatches to section-writer",
+		"4. Section-writer returns the section",
+		"5. Section writer result is appended to research-manager's output",
+		"6. Research-manager writes abstract and conclusions",
+		"```",
+		"",
+		"## Rules",
+		"- NEVER try to read, write, or execute code directly — you have no such tools",
+		"- ALWAYS use dispatch_agent to get work done",
+		"- Order dispatches correctly when there are dependencies",
+		"- Review results before dispatching dependent tasks",
+		"- If a task fails, try a different agent or adjust the task description",
+		"- Summarize the outcome for the user",
+		"- Keep tasks focused — one clear objective per dispatch",
+	];
+
+	return {
 			systemPrompt: `You are a dispatcher agent. You coordinate specialist agents to accomplish tasks.
 You do NOT have direct access to the codebase. You MUST delegate all work through
 agents using the dispatch_agent tool.
@@ -645,20 +816,7 @@ agents using the dispatch_agent tool.
 Members: ${teamMembers}
 You can ONLY dispatch to agents listed below. Do not attempt to dispatch to agents outside this team.
 
-## How to Work
-- Analyze the user's request and break it into clear sub-tasks
-- Choose the right agent(s) for each sub-task
-- Dispatch tasks using the dispatch_agent tool
-- Review results and dispatch follow-up agents if needed
-- If a task fails, try a different agent or adjust the task description
-- Summarize the outcome for the user
-
-## Rules
-- NEVER try to read, write, or execute code directly — you have no such tools
-- ALWAYS use dispatch_agent to get work done
-- You can chain agents: use scout to explore, then builder to implement
-- You can dispatch the same agent multiple times with different tasks
-- Keep tasks focused — one clear objective per dispatch
+${workflowExamples.join("\n")}
 
 ## Agents
 
@@ -718,7 +876,7 @@ ${agentCatalog}`,
 				const model = _ctx.model?.id || "no-model";
 				const usage = _ctx.getContextUsage();
 				const pct = usage ? usage.percent : 0;
-				const filled = Math.round(pct / 10);
+				const filled = Math.max(0, Math.min(10, Math.round(pct / 10)));
 				const bar = "#".repeat(filled) + "-".repeat(10 - filled);
 
 				const left = theme.fg("dim", ` ${model}`) +

@@ -135,7 +135,11 @@ export default function (pi: ExtensionAPI) {
 
 	function renderCard(state: ExpertState, colWidth: number, theme: any): string[] {
 		const w = colWidth - 2;
-		const truncate = (s: string, max: number) => s.length > max ? s.slice(0, max - 3) + "..." : s;
+		const truncate = (s: string, max: number) => {
+			const clean = s.replace(/[\r\n\t]/g, " ");
+			if (visibleWidth(clean) <= max) return clean;
+			return truncateToWidth(clean, max - 3) + "...";
+		};
 
 		const statusColor = state.status === "idle" ? "dim"
 			: state.status === "researching" ? "accent"
@@ -146,23 +150,23 @@ export default function (pi: ExtensionAPI) {
 
 		const name = displayName(state.def.name);
 		const nameStr = theme.fg("accent", theme.bold(truncate(name, w)));
-		const nameVisible = Math.min(name.length, w);
+		const nameVisible = visibleWidth(nameStr);
 
 		const statusStr = `${statusIcon} ${state.status}`;
 		const timeStr = state.status !== "idle" ? ` ${Math.round(state.elapsed / 1000)}s` : "";
 		const queriesStr = state.queryCount > 0 ? ` (${state.queryCount})` : "";
 		const statusLine = theme.fg(statusColor, statusStr + timeStr + queriesStr);
-		const statusVisible = statusStr.length + timeStr.length + queriesStr.length;
+		const statusVisible = visibleWidth(statusLine);
 
 		const workRaw = state.question || state.def.description;
 		const workText = truncate(workRaw, Math.min(50, w - 1));
 		const workLine = theme.fg("muted", workText);
-		const workVisible = workText.length;
+		const workVisible = visibleWidth(workLine);
 
 		const lastRaw = state.lastLine || "";
 		const lastText = truncate(lastRaw, Math.min(50, w - 1));
 		const lastLineRendered = lastText ? theme.fg("dim", lastText) : theme.fg("dim", "—");
-		const lastVisible = lastText ? lastText.length : 1;
+		const lastVisible = visibleWidth(lastLineRendered);
 
 		const colors = EXPERT_COLORS[state.def.name];
 		const bg  = colors?.bg ?? "";
@@ -227,7 +231,7 @@ export default function (pi: ExtensionAPI) {
 						}
 					}
 
-					return lines;
+					return lines.map(line => truncateToWidth(line, width));
 				},
 				invalidate() {},
 			};
@@ -609,7 +613,7 @@ Ask specific questions about what you need to BUILD. Each expert will return doc
 				const model = _ctx.model?.id || "no-model";
 				const usage = _ctx.getContextUsage();
 				const pct = usage ? usage.percent : 0;
-				const filled = Math.round(pct / 10);
+				const filled = Math.max(0, Math.min(10, Math.round(pct / 10)));
 				const bar = "#".repeat(filled) + "-".repeat(10 - filled);
 
 				const active = Array.from(experts.values()).filter(e => e.status === "researching").length;

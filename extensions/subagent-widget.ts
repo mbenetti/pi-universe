@@ -138,8 +138,18 @@ export default function (pi: ExtensionAPI) {
 			? `${ctx.model.provider}/${ctx.model.id}`
 			: "openrouter/google/gemini-3-flash-preview";
 
+		// Propagate langfuse tracing to subprocess
+		const extArgs: string[] = [];
+		if (process.env.LANGFUSE_SECRET_KEY) {
+			const lfExt = path.join(ctx.cwd || process.cwd(), "extensions", "langfuse-trace.ts");
+			if (fs.existsSync(lfExt)) {
+				extArgs.push("-e", lfExt);
+			}
+		}
+
 		return new Promise<void>((resolve) => {
 			const proc = spawn("pi", [
+				...extArgs,
 				"--mode", "json",
 				"-p",
 				"--session", state.sessionFile,   // persistent session for /subcont resumption
