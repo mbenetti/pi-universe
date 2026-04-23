@@ -64,13 +64,13 @@ npm i -g @llamaindex/liteparse
 # 📥 Downloading paper...
 # ✅ Downloaded successfully! (2.1M)
 # 📄 Parsing with LiteParse...
-# ✅ Parsed to markdown: ~/.research/papers/2103.14030.md
+# ✅ Parsed to markdown: .research/papers/2103.14030.md
 ```
 
 ## Data Structure
 
 ```
-~/.research/
+.research/
 ├── papers/
 │   ├── 2103.14030.pdf    # Original PDF
 │   ├── 2103.14030.md      # LiteParse markdown output
@@ -100,9 +100,9 @@ The research workflow uses specialized agents:
 
 2. Manager: Selects papers → Researcher downloads
    → Researcher: /research-workflow/scripts/download.sh <arxiv-id>
-   → Result: ~/.research/papers/<arxiv-id>.md
+   → Result: .research/papers/<arxiv-id>.md
 
-3. Section-writer: Reads ~/.research/papers/*.md
+3. Section-writer: Reads .research/papers/*.md
    → Writes: Body section (methodology, results, etc.)
 
 4. Section-critic: Reviews section

@@ -4,7 +4,9 @@
 
 set -e
 
-PROJECT_DIR="/Users/maurobenetti/Documents/Datascience/pi-vs-claude-code"
+# Auto-detect project root from script location
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 RESEARCH_DIR="$PROJECT_DIR/.research"
 
 echo "🔬 Setting up Scientific Research Workflow..."

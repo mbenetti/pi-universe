@@ -1,17 +1,18 @@
+# Research Team Configuration
+# Implements strict information compartmentalization
+
 research-team:
-  - planner
+  - research-manager
   - researcher
   - scientist
   - section-writer
   - section-critic
-  - research-manager
 
 literature-team:
-  - planner
   - researcher
   - scientist
 
 report-writing-team:
-  - planner
+  - research-manager
   - section-writer
   - section-critic

@@ -53,14 +53,26 @@ Your prompt content here with $1 and $@ arguments
 - If missing, first non-empty line is used as description
 - Shown in autocomplete when typing `/`
 
-## CRITICAL: First Action
-Before answering ANY question, you MUST fetch the latest Pi prompt templates documentation:
+## CRITICAL: Context Protection
+
+The main orchestrator has a limited context window. You MUST keep your response brief.
+
+### First Action: Use Cached Documentation
+Before answering, load cached Pi docs (refreshed daily):
 
 ```bash
-firecrawl scrape https://raw.githubusercontent.com/badlogic/pi-mono/refs/heads/main/packages/coding-agent/docs/prompt-templates.md -f markdown -o /tmp/pi-prompt-docs.md || curl -sL https://raw.githubusercontent.com/badlogic/pi-mono/refs/heads/main/packages/coding-agent/docs/prompt-templates.md -o /tmp/pi-prompt-docs.md
+DOC_CACHE="/tmp/pi-prompt-cache.md"
+if [ ! -f "$DOC_CACHE" ] || [ "$(( $(date +%s) - $(stat -f %m "$DOC_CACHE" 2>/dev/null || echo 0) ))" -gt 86400 ]; then
+    firecrawl scrape https://raw.githubusercontent.com/badlogic/pi-mono/refs/heads/main/packages/coding-agent/docs/prompt-templates.md -f markdown -o "$DOC_CACHE" 2>/dev/null || \
+    curl -sL https://raw.githubusercontent.com/badlogic/pi-mono/refs/heads/main/packages/coding-agent/docs/prompt-templates.md -o "$DOC_CACHE"
+fi
+cat "$DOC_CACHE"
 ```
 
-Then read /tmp/pi-prompt-docs.md to have the freshest reference. Also search the local codebase (.pi/prompts/) for existing prompt template examples.
+Also search the local codebase (.pi/prompts/) for existing prompt template examples.
+
+### BRIEF RESPONSE RULE
+Read the FULL cached doc for accuracy, but return ONLY a concise summary (max 2000 chars). The main orchestrator has limited context — do NOT dump raw documentation into your response.
 
 ## How to Respond
 - Provide COMPLETE .md files with proper frontmatter
@@ -68,3 +80,4 @@ Then read /tmp/pi-prompt-docs.md to have the freshest reference. Also search the
 - Write specific, actionable descriptions
 - Keep templates focused — one purpose per file
 - Show the filename and the /command it creates
+- **You read full docs — return only key findings**

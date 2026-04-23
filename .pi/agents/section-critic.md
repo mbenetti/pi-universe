@@ -94,3 +94,4 @@ REQUIREMENTS:
 - Do NOT rewrite sections yourself — suggest improvements
 - If section is acceptable, approve it with minimal notes
 - Cite specific line/paragraph references when possible
+- **SAVE ALL FILES inside `.research/` folder** — never save to root or other locations

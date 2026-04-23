@@ -113,16 +113,26 @@ This is CRITICAL for building extensions that work on macOS:
 - Extension shortcut errors appear as red text in the chat area
 - Shortcuts not matching in `matchesKey()` means the terminal isn't sending the expected escape sequence
 
-## CRITICAL: First Action
-Before answering ANY question, you MUST fetch the latest Pi keybindings documentation:
+## CRITICAL: Context Protection
+
+The main orchestrator has a limited context window. You MUST keep your response brief.
+
+### First Action: Use Cached Documentation
+Before answering, load cached Pi docs (refreshed daily):
 
 ```bash
-firecrawl scrape https://raw.githubusercontent.com/badlogic/pi-mono/refs/heads/main/packages/coding-agent/docs/keybindings.md -f markdown -o /tmp/pi-keybindings-docs.md || curl -sL https://raw.githubusercontent.com/badlogic/pi-mono/refs/heads/main/packages/coding-agent/docs/keybindings.md -o /tmp/pi-keybindings-docs.md
+DOC_CACHE="/tmp/pi-keybindings-cache.md"
+if [ ! -f "$DOC_CACHE" ] || [ "$(( $(date +%s) - $(stat -f %m "$DOC_CACHE" 2>/dev/null || echo 0) ))" -gt 86400 ]; then
+    firecrawl scrape https://raw.githubusercontent.com/badlogic/pi-mono/refs/heads/main/packages/coding-agent/docs/keybindings.md -f markdown -o "$DOC_CACHE" 2>/dev/null || \
+    curl -sL https://raw.githubusercontent.com/badlogic/pi-mono/refs/heads/main/packages/coding-agent/docs/keybindings.md -o "$DOC_CACHE"
+fi
+cat "$DOC_CACHE"
 ```
 
-Then read /tmp/pi-keybindings-docs.md to have the freshest reference.
-
 Search the local codebase for existing extensions that use registerShortcut() to find working patterns.
+
+### BRIEF RESPONSE RULE
+Read the FULL cached doc for accuracy, but return ONLY a concise summary (max 2000 chars). The main orchestrator has limited context — do NOT dump raw documentation into your response.
 
 ## How to Respond
 - ALWAYS check if the requested key combo is reserved before recommending it
@@ -132,3 +142,4 @@ Search the local codebase for existing extensions that use registerShortcut() to
 - Recommend safe alternatives when a requested key is taken
 - Show how to debug with `--verbose` if shortcuts aren't firing
 - When suggesting keys, prefer this priority: free ctrl+letter > function keys > overridable non-reserved keys
+- **You read full docs — return only key findings**

@@ -86,3 +86,4 @@ Write ONLY your section content:
 - Cite all claims with [Author, Year] format
 - Keep section under 3000 words unless specified
 - Use your own words, don't paste paper text
+- **SAVE ALL FILES inside `.research/` folder** — never save to root or other locations

@@ -395,6 +395,10 @@ export default function (pi: ExtensionAPI) {
 		const agentSessionFile = join(sessionDir, `${agentKey}.json`);
 
 		// Build args — first run creates session, subsequent runs resume
+		// Wipe the previous session file to prevent context accumulation
+		// from massive tool results (e.g. full papers read by scientist)
+		try { unlinkSync(agentSessionFile); } catch {}
+
 		const args = [
 			"--mode", "json",
 			"-p",
@@ -406,14 +410,15 @@ export default function (pi: ExtensionAPI) {
 			"--session", agentSessionFile,
 		];
 
-		// Continue existing session if we have one
-		if (state.sessionFile) {
-			args.push("-c");
-		}
-
 		args.push(task);
 
+		const MAX_OUTPUT_LENGTH = 8000; // Hard cap per agent dispatch to prevent context flood
+		let outputTruncated = false;
 		const textChunks: string[] = [];
+
+		function collectedLength(): number {
+			return textChunks.reduce((sum, c) => sum + c.length, 0);
+		}
 
 		const result = await new Promise<{ output: string; exitCode: number; elapsed: number }>((resolve) => {
 			const proc = spawn("pi", args, {
@@ -435,6 +440,15 @@ export default function (pi: ExtensionAPI) {
 						if (event.type === "message_update") {
 							const delta = event.assistantMessageEvent;
 							if (delta?.type === "text_delta") {
+								// Stop collecting at MAX_OUTPUT_LENGTH to protect main context
+								if (collectedLength() >= MAX_OUTPUT_LENGTH) {
+									if (!outputTruncated) {
+										outputTruncated = true;
+										textChunks.push("\n\n[... output truncated — agent response exceeds " + MAX_OUTPUT_LENGTH + " chars ...]");
+										updateWidget();
+									}
+									continue;
+								}
 								textChunks.push(delta.delta || "");
 								const full = textChunks.join("");
 								const last = full.split("\n").filter((l: string) => l.trim()).pop() || "";
@@ -466,12 +480,16 @@ export default function (pi: ExtensionAPI) {
 			proc.stderr!.on("data", () => {});
 
 			proc.on("close", (code) => {
-				if (buffer.trim()) {
+				if (buffer.trim() && !outputTruncated) {
 					try {
 						const event = JSON.parse(buffer);
 						if (event.type === "message_update") {
 							const delta = event.assistantMessageEvent;
-							if (delta?.type === "text_delta") textChunks.push(delta.delta || "");
+							if (delta?.type === "text_delta") {
+								if (collectedLength() < MAX_OUTPUT_LENGTH) {
+									textChunks.push(delta.delta || "");
+								}
+							}
 						}
 					} catch {}
 				}
@@ -490,7 +508,8 @@ export default function (pi: ExtensionAPI) {
 				updateWidget();
 
 				ctx.ui.notify(
-					`${displayName(state.def.name)} ${state.status} in ${Math.round(state.elapsed / 1000)}s`,
+					`${displayName(state.def.name)} ${state.status} in ${Math.round(state.elapsed / 1000)}s` +
+					(outputTruncated ? ` (truncated at ${MAX_OUTPUT_LENGTH} chars)` : ""),
 					state.status === "done" ? "success" : "error"
 				);
 
@@ -705,8 +724,7 @@ export default function (pi: ExtensionAPI) {
 			widgetCtx = _ctx;
 			const names = Array.from(agentStates.values())
 				.map(s => {
-					const session = s.sessionFile ? "resumed" : "new";
-					return `${displayName(s.def.name)} (${s.status}, ${session}, runs: ${s.runCount}): ${s.def.description}`;
+					return `${displayName(s.def.name)} (${s.status}, runs: ${s.runCount}): ${s.def.description}`;
 				})
 				.join("\n");
 			_ctx.ui.notify(names || "No agents loaded", "info");

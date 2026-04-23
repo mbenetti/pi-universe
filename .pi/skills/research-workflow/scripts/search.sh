@@ -5,6 +5,12 @@
 
 set -e
 
+# Auto-detect project root from script location
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
+RESEARCH_DIR="$PROJECT_DIR/.research"
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+
 QUERY="${1:-}"
 LIMIT="${2:-10}"
 
@@ -15,10 +21,6 @@ if [ -z "$QUERY" ]; then
     echo "Output: Clean summary table with IDs for download."
     exit 1
 fi
-
-PROJECT_DIR="/Users/maurobenetti/Documents/Datascience/pi-vs-claude-code"
-RESEARCH_DIR="$PROJECT_DIR/.research"
-TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 
 echo "🔍 Searching: $QUERY (max $LIMIT)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

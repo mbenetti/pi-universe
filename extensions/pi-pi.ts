@@ -292,7 +292,13 @@ export default function (pi: ExtensionAPI) {
 			question,
 		];
 
+		const MAX_OUTPUT_LENGTH = 8000; // Hard cap per expert — high enough for code examples, prevents context flood
+		let outputTruncated = false;
 		const textChunks: string[] = [];
+
+		function collectedLength(): number {
+			return textChunks.reduce((sum, c) => sum + c.length, 0);
+		}
 
 		return new Promise((resolve) => {
 			const proc = spawn("pi", args, {
@@ -314,6 +320,15 @@ export default function (pi: ExtensionAPI) {
 						if (event.type === "message_update") {
 							const delta = event.assistantMessageEvent;
 							if (delta?.type === "text_delta") {
+								// Stop collecting at MAX_OUTPUT_LENGTH to protect main context
+								if (collectedLength() >= MAX_OUTPUT_LENGTH) {
+									if (!outputTruncated) {
+										outputTruncated = true;
+										textChunks.push("\n\n[... output truncated — expert response exceeds " + MAX_OUTPUT_LENGTH + " chars ...]");
+										updateWidget();
+									}
+									continue;
+								}
 								textChunks.push(delta.delta || "");
 								const full = textChunks.join("");
 								const last = full.split("\n").filter((l: string) => l.trim()).pop() || "";
@@ -329,12 +344,16 @@ export default function (pi: ExtensionAPI) {
 			proc.stderr!.on("data", () => {});
 
 			proc.on("close", (code) => {
-				if (buffer.trim()) {
+				if (buffer.trim() && !outputTruncated) {
 					try {
 						const event = JSON.parse(buffer);
 						if (event.type === "message_update") {
 							const delta = event.assistantMessageEvent;
-							if (delta?.type === "text_delta") textChunks.push(delta.delta || "");
+							if (delta?.type === "text_delta") {
+								if (collectedLength() < MAX_OUTPUT_LENGTH) {
+									textChunks.push(delta.delta || "");
+								}
+							}
 						}
 					} catch {}
 				}
@@ -348,7 +367,8 @@ export default function (pi: ExtensionAPI) {
 				updateWidget();
 
 				ctx.ui.notify(
-					`${displayName(state.def.name)} ${state.status} in ${Math.round(state.elapsed / 1000)}s`,
+					`${displayName(state.def.name)} ${state.status} in ${Math.round(state.elapsed / 1000)}s` +
+					(outputTruncated ? ` (output truncated at ${MAX_OUTPUT_LENGTH} chars)` : ""),
 					state.status === "done" ? "success" : "error"
 				);
 
@@ -431,9 +451,11 @@ Ask specific questions about what you need to BUILD. Each expert will return doc
 			const settled = await Promise.allSettled(
 				queries.map(async ({ expert, question }) => {
 					const result = await queryExpert(expert, question, ctx);
-					const truncated = result.output.length > 12000
-						? result.output.slice(0, 12000) + "\n\n... [truncated — ask follow-up for more]"
-						: result.output;
+					// Already truncated at stream level in queryExpert(),
+						// but double-check here as a safety net
+						const truncated = result.output.length > 12000
+							? result.output.slice(0, 12000) + "\n\n... [stream truncation boundary hit — ask follow-up for more]"
+							: result.output;
 					const status = result.exitCode === 0 ? "done" : "error";
 					return {
 						expert,

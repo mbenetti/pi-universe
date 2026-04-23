@@ -5,9 +5,11 @@
 
 set -e
 
-INPUT="${1:-}"
-PROJECT_DIR="/Users/maurobenetti/Documents/Datascience/pi-vs-claude-code"
+# Auto-detect project root from script location (4 levels up: scripts/ -> research-workflow/ -> skills/ -> .pi/ -> project)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 OUTPUT_DIR="${2:-$PROJECT_DIR/.research/papers}"
+INPUT="${1:-}"
 
 if [ -z "$INPUT" ]; then
     echo "Usage: download.sh <identifier> [output-dir]"

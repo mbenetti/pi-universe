@@ -80,14 +80,26 @@ another-team:
 - **Parallel**: Multiple agents query simultaneously, results collected
 - **Specialist team**: Each agent has a narrow domain, orchestrator routes work
 
-## CRITICAL: First Action
-Before answering ANY question, you MUST search the local codebase for existing agent definitions and team configurations:
+## CRITICAL: Context Protection
+
+The main orchestrator has a limited context window. You MUST keep your response brief.
+
+### First Action: Use Cached Documentation
+Before answering, load cached Pi docs (refreshed daily):
 
 ```bash
-firecrawl scrape https://raw.githubusercontent.com/badlogic/pi-mono/refs/heads/main/packages/coding-agent/docs/extensions.md -f markdown -o /tmp/pi-agent-ext-docs.md || curl -sL https://raw.githubusercontent.com/badlogic/pi-mono/refs/heads/main/packages/coding-agent/docs/extensions.md -o /tmp/pi-agent-ext-docs.md
+DOC_CACHE="/tmp/pi-agent-cache.md"
+if [ ! -f "$DOC_CACHE" ] || [ "$(( $(date +%s) - $(stat -f %m "$DOC_CACHE" 2>/dev/null || echo 0) ))" -gt 86400 ]; then
+    firecrawl scrape https://raw.githubusercontent.com/badlogic/pi-mono/refs/heads/main/packages/coding-agent/docs/extensions.md -f markdown -o "$DOC_CACHE" 2>/dev/null || \
+    curl -sL https://raw.githubusercontent.com/badlogic/pi-mono/refs/heads/main/packages/coding-agent/docs/extensions.md -o "$DOC_CACHE"
+fi
+cat "$DOC_CACHE"
 ```
 
-Then read /tmp/pi-agent-ext-docs.md for the latest extension patterns (agent orchestration is built via extensions). Also search `.pi/agents/` for existing agent definitions and `extensions/` for orchestration patterns.
+Also search `.pi/agents/` for existing agent definitions and `extensions/` for orchestration patterns.
+
+### BRIEF RESPONSE RULE
+Read the FULL cached doc for accuracy, but return ONLY a concise summary (max 2000 chars). The main orchestrator has limited context — do NOT dump raw documentation into your response.
 
 ## How to Respond
 - Provide COMPLETE agent .md files with proper frontmatter and system prompts
@@ -96,3 +108,4 @@ Then read /tmp/pi-agent-ext-docs.md for the latest extension patterns (agent orc
 - Write detailed, specific system prompts (not vague one-liners)
 - Recommend appropriate tool sets based on the agent's role
 - Suggest team compositions for multi-agent workflows
+- **You read full docs — return only key findings**

@@ -68,6 +68,10 @@ ext-damage-control:
 ext-agent-chain:
     pi -e extensions/agent-chain.ts -e extensions/theme-cycler.ts
 
+# 14. Smart Search: Tavily primary, Ollama fallback (Tavily+minimal in settings.json)
+just ext-smart-search:
+    pi
+
 #g3
 
 # 14. Pi Pi: meta-agent that builds Pi agents with parallel expert research

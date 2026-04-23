@@ -1,45 +1,77 @@
 # 🔬 Research Pipeline for Pi
 
-A **multi-phase research workflow** with specialized agents that prevent context window explosion when analyzing academic papers.
+A **multi-phase research workflow** with specialized agents and **strict information compartmentalization** to prevent context window explosion when analyzing academic papers.
+
+## Key Principle: No Agent Sees Everything
+
+Every agent has defined, limited access to content. Information flows through delegation, never by direct full access.
 
 ## Architecture Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│  RESEARCH TEAM                                                          │
+│  COMPARTMENTALIZED RESEARCH TEAM                                         │
 │                                                                         │
-│  ┌─────────────────┐                                                     │
-│  │ research-manager │ → Writes: Abstract, Introduction, Conclusions     │
-│  │ (Abstracts only) │ ← Receives: Paper summaries from sub-agents       │
-│  └────────┬────────┘                                                     │
-│           │                                                              │
-│  ┌────────┴────────┐                                                     │
-│  │    researcher    │ → Downloads papers, parses with LiteParse         │
-│  │ (Returns metadata│ → Spawns sub-agents for deep analysis             │
-│  └────────┬────────┘                                                     │
-│           │                                                              │
-│           ▼                                                              │
-│  ┌─────────────────┐                                                     │
-│  │  section-writer │ → Writes: Body sections (full paper access)        │
-│  │  (Full papers)  │ ← Reads: .research/papers/*.md                     │
-│  └────────┬────────┘                                                     │
-│           │                                                              │
-│           ▼                                                              │
-│  ┌─────────────────┐                                                     │
-│  │  section-critic  │ → Reviews: Quality, citations, facts              │
-│  │  (Sections + src)│ ← Validates: Requirements compliance              │
-│  └─────────────────┘                                                     │
+│  ┌─────────────────────┐                                                │
+│  │  research-manager   │ → Access: SUMMARIES ONLY                       │
+│  │                     │ → Writes: Abstract, Introduction, Conclusions  │
+│  │                     │ ← Receives: Paper summaries from sub-agents   │
+│  │  (context minimal)  │ → NEVER: Reads full papers, calls web_search  │
+│  └──────────┬──────────┘                                                │
+│             │                                                            │
+│             ▼                                                            │
+│  ┌─────────────────────┐                                                │
+│  │     researcher      │ → Access: ABSTRACTS + FIRST 50 LINES           │
+│  │                     │ → Searches: role-restricted-search skill       │
+│  │                     │ → Returns: titles, abstracts, key points       │
+│  │  (limited view)     │ → NEVER: Reads methodology, results sections   │
+│  └──────────┬──────────┘                                                │
+│             │                                                            │
+│     Need full content?                                                   │
+│             │                                                            │
+│             ▼                                                            │
+│  ┌─────────────────────┐                                                │
+│  │      scientist      │ → Access: FULL CONTENT (all sections)          │
+│  │                     │ → Uses: full-document-access skill              │
+│  │                     │ → Returns: Structured analysis summaries        │
+│  │  (deep access)      │ → Only agent that reads methodology/results    │
+│  └──────────┬──────────┘                                                │
+│             │                                                            │
+│             ▼                                                            │
+│  ┌─────────────────────┐                                                │
+│  │   section-writer    │ → Access: Full papers (markdown)               │
+│  │                     │ → Reads: .research/papers/*.md                 │
+│  └──────────┬──────────┘                                                │
+│             │                                                            │
+│             ▼                                                            │
+│  ┌─────────────────────┐                                                │
+│  │   section-critic    │ → Access: Written sections + sources           │
+│  │                     │ → Reviews: Quality, citations, facts            │
+│  └─────────────────────┘                                                │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+## Information Compartmentalization
+
+Each agent has **strict, enforced access boundaries** to prevent context window explosion:
+
+| Agent | Access Level | What's Blocked | Purpose |
+| ----- | ------------ | -------------- | ------- |
+| **manager** | Summaries only | Full papers, methodology, results | Orchestration, synthesis |
+| **researcher** | Abstracts + 50 lines | Methodology, results, appendices | Discovery, search |
+| **scientist** | Full content | Nothing blocked | Deep analysis, data extraction |
+| **section-writer** | Full papers (markdown) | Source PDFs | Writing body sections |
+| **section-critic** | Sections + sources | Raw data | Quality review |
+
 ## Agent Responsibilities
 
-| Agent                | Access                     | Writes                                     | Tools                  |
-| -------------------- | -------------------------- | ------------------------------------------ | ---------------------- |
-| **research-manager** | Abstracts only             | Abstract, Introduction, Conclusions        | read,grep,find,ls,bash |
-| **researcher**       | Metadata                   | Paper discovery, download, parsing         | read,grep,find,ls,bash |
-| **section-writer**   | Full papers (markdown)     | Body sections (methodology, results, etc.) | read,grep,find,ls,bash |
-| **section-critic**   | Written sections + sources | Quality reviews with actionable feedback   | read,grep,find,ls,bash |
+| Agent                | Access                           | Writes                    | Tools                  |
+| -------------------- | -------------------------------- | ------------------------- | ---------------------- |
+| **research-manager** | Summaries only (NO full papers) | Abstract, Intro, Conclusions | read,grep,find,ls,bash |
+| **researcher**       | Abstracts + first 50 lines max   | Paper discovery, metadata   | read,grep,find,ls,bash |
+| **scientist**        | FULL CONTENT (all sections)      | Deep analysis, methodology  | read,grep,find,ls,bash |
+| **section-writer**   | Full papers (markdown)           | Body sections              | read,grep,find,ls,bash |
+| **section-critic**   | Sections + sources              | Quality reviews            | read,grep,find,ls,bash |
 
 ## Components
 
@@ -47,15 +79,15 @@ A **multi-phase research workflow** with specialized agents that prevent context
 
 **Research Team Agents:**
 
-| Agent                 | Purpose                                          |
-| --------------------- | ------------------------------------------------ |
-| `research-manager.md` | Orchestrates workflow, writes framework elements |
-| `researcher.md`       | Searches papers, downloads, parses to markdown   |
-| `scientist.md`        | Deep analysis of papers and methodologies        |
-| `section-writer.md`   | Writes body sections using full paper content    |
-| `section-critic.md`   | Reviews sections for quality and compliance      |
-| `research.md`         | General research coordinator                     |
-| `teams.yaml`          | Team configuration                               |
+| Agent                 | Access Level | Purpose                                          |
+| --------------------- | ------------ | ------------------------------------------------ |
+| `research-manager.md` | Summaries only | Orchestrates workflow, writes framework — NEVER reads full content |
+| `researcher.md` | Abstracts + 50 lines | Searches papers, downloads, parses — limited to surface info |
+| `scientist.md` | **Full content** | Deep analysis of papers and methodologies — has complete access |
+| `section-writer.md` | Full papers (markdown) | Writes body sections using parsed markdown |
+| `section-critic.md` | Sections + sources | Reviews sections for quality and compliance |
+| `research.md` | General | General research coordinator |
+| `teams.yaml` | Configuration | Team configuration with information flow rules |
 
 **Development Pipeline Agents:**
 
@@ -71,6 +103,41 @@ A **multi-phase research workflow** with specialized agents that prevent context
 | `bowser.md`        | Web browsing and scraping agent               |
 
 ### Skills (`.pi/skills/`)
+
+**Role-Restricted Search** (`.pi/skills/role-restricted-search/`):
+
+Web search with **automatic content filtering based on calling agent's role**:
+
+| Role | Output | Limit | What They See |
+| ---- | ------ | ----- | ------------- |
+| `manager` | Title + 1-line summary | 10 results | Truncated overview only |
+| `researcher` | Title + abstract + key points | 20 results | Full abstracts + bullets |
+| `scientist` | Title + full snippet + URLs | 30 results | Complete search data |
+| (unknown) | Title + 1-line summary | 5 results | Minimal fallback |
+
+| Script | Purpose |
+| ------ | ------- |
+| `search.sh` | Main entry — detects role and filters accordingly |
+| `api-search.sh` | Brave API wrapper for search requests |
+| `filter-summaries.js` | Strips to titles + 1-line descriptions |
+| `filter-abstracts.js` | Returns abstracts + key points |
+| `filter-full.js` | Returns complete snippet data |
+
+**Full Document Access** (`.pi/skills/full-document-access/`):
+
+Scientist-only document fetcher with **role verification**:
+
+| Caller Role | Access | Content |
+|-------------|--------|---------|
+| `scientist` | ✅ Full | All sections including appendices |
+| `researcher` | ❌ Denied | Must delegate to scientist |
+| `manager` | ❌ Denied | Must delegate to scientist |
+| (unknown) | ❌ Denied | Role verification required |
+
+| Script | Purpose |
+| ------ | ------- |
+| `fetch-document.sh` | Verifies role, blocks non-scientists |
+| `fetch-doc.js` | Fetches and caches full document content |
 
 **Research Workflow** (`.pi/skills/research-workflow/`):
 
@@ -98,7 +165,7 @@ Web browsing and scraping capabilities for research agents.
 | `research-tree.ts`         | **Tree-style dashboard with activity icons and metadata**       |
 | `research-orchestrator.ts` | Full pipeline orchestration with /research workflow             |
 | `langfuse-trace.ts`        | Langfuse observability integration                              |
-| `agent-chain.ts`           | Sequential pipeline orchestrator (plan→build→review)            |
+| `agent-chain.ts`           | Sequential pipeline orchestrator (plan→build→review)          |
 | `agent-team.ts`            | Team dispatcher with team select and grid dashboard             |
 | `pi-pi.ts`                 | Meta-agent for building Pi agents with parallel expert research |
 | `subagent-widget.ts`       | Background subagents with live streaming widgets                |
@@ -112,20 +179,24 @@ Web browsing and scraping capabilities for research agents.
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │  PHASE 1: Search                                                │
-│  Researcher → ONLY titles, authors, abstracts (truncated)      │
+│  Researcher → ONLY titles, abstracts (role-filtered)          │
 │                                                                 │
 │  PHASE 2: Download & Parse                                      │
-│  Researcher → Download PDFs + LiteParse → Markdown            │
-│  Papers stored: .research/papers/<arxiv-id>.md                  │
+│  Researcher → Download PDFs + LiteParse → Markdown           │
+│  Papers stored: .research/papers/<arxiv-id>.md                 │
 │                                                                 │
-│  PHASE 3: Section Writing                                       │
+│  PHASE 3: Deep Analysis (Scientist Only)                       │
+│  Scientist → Reads FULL content → Returns structured summary   │
+│  Manager NEVER sees full content, only scientist's summary     │
+│                                                                 │
+│  PHASE 4: Section Writing                                       │
 │  Section-writer → Reads full markdown → Writes body section    │
 │                                                                 │
-│  PHASE 4: Review                                                │
+│  PHASE 5: Review                                                │
 │  Section-critic → Validates quality, citations, compliance     │
 │                                                                 │
-│  PHASE 5: Framework                                             │
-│  Manager → Writes Abstract, Intro, Conclusions                 │
+│  PHASE 6: Framework                                             │
+│  Manager → Writes Abstract, Intro, Conclusions (from summaries)│
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -181,11 +252,11 @@ Project-relative path: `.research/` (at `/Users/maurobenetti/Documents/Datascien
 # .pi/agents/teams.yaml
 
 research-team:
-  - researcher           # Searches, downloads, parses
-  - research-manager     # Orchestrates, writes framework
-  - scientist            # Deep analysis (optional)
-  - section-writer        # Writes body sections
-  - section-critic        # Reviews sections
+  - research-manager     # Summaries only — orchestrator
+  - researcher           # Abstracts + 50 lines — discovery
+  - scientist            # Full content — deep analysis
+  - section-writer       # Full papers — writing
+  - section-critic       # Sections + sources — review
 
 report-writing-team:
   - research-manager      # Abstract, Intro, Conclusions
@@ -193,14 +264,55 @@ report-writing-team:
   - section-critic        # Quality review
 ```
 
+### Information Flow Rules
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  CONTENT ACCESS MATRIX                                   │
+├─────────────────────────────────────────────────────────┤
+│  Content Type      │ manager │ researcher │ scientist   │
+│  ─────────────────────────────────────────────────────  │
+│  Search results    │ ❌      │ ✅          │ ✅          │
+│  Summaries         │ ✅      │ ✅          │ ✅          │
+│  Abstracts         │ ❌      │ ✅          │ ✅          │
+│  First 50 lines    │ ❌      │ ✅          │ ✅          │
+│  Full text         │ ❌      │ ❌          │ ✅          │
+│  Methodology       │ ❌      │ ❌          │ ✅          │
+│  Raw data          │ ❌      │ ❌          │ ✅          │
+│  Appendices        │ ❌      │ ❌          │ ✅          │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Delegation Patterns
+
+**Manager → Researcher:**
+```
+[DELEGATE:researcher] Search for: "quantum computing applications"
+[DELEGATE:researcher] Find abstracts on: "machine learning healthcare"
+[DELEGATE:researcher] Get first 50 lines of: paper-123
+```
+
+**Manager/Researcher → Scientist:**
+```
+[DELEGATE:scientist] Full analysis of: paper-123
+[DELEGATE:scientist] Extract: methodology from paper-123
+[DELEGATE:scientist] Compare: results of paper-123 vs paper-124
+```
+
 ## Quick Start
 
-### 1. Setup Dependencies
+### Compartmentalization Setup
 
 ```bash
-# Install Python packages and LiteParse
-/research-workflow/scripts/setup.sh
-npm i -g @llamaindex/liteparse
+# The skills handle role-based filtering automatically
+# No additional configuration needed — just use the agents
+
+# Launch with role-restricted search
+pi -e extensions/research-orchestrator.ts
+
+# Manager will delegate searches to researcher
+# Researcher will see only abstracts
+# Scientist will be called for full content (never manager directly)
 ```
 
 ### 2. Launch Research Team
@@ -230,10 +342,15 @@ The manager will ask clarifying questions:
 - Do you want foundational papers, recent advances, or comprehensive coverage?
 - What citation style and report structure do you need?
 
-### 4. Researcher Searches Papers
+### 4. Researcher Searches (Role-Restricted)
 
 ```bash
 /research-workflow/scripts/search.sh "transformer attention mechanism" 10
+# Returns: Titles + abstracts only (researcher role)
+
+# For scientist access to full results:
+ROLE=scientist .pi/skills/role-restricted-search/scripts/search.sh "transformer attention"
+# Returns: Full snippets + URLs + relevance scores
 ```
 
 Returns titles, authors, abstracts only.
@@ -363,9 +480,9 @@ query_experts([
 | `theme-expert`      | Themes — JSON format, 51 color tokens, vars      |
 | `skill-expert`      | Skills — multi-file packages, scripts            |
 | `config-expert`     | Settings — providers, models, packages           |
-| `tui-expert`        | TUI — components, keyboard input, overlays       |
-| `prompt-expert`     | Prompt templates — single-file .md commands      |
-| `agent-expert`      | Agent definitions — .md personas, teams.yaml     |
+| `tui-expert`        | TUI — components, keyboard input, overlays      |
+| `prompt-expert`     | Prompt templates — single-file .md commands     |
+| `agent-expert`      | Agent definitions — .md personas, teams.yaml    |
 | `keybinding-expert` | Keyboard shortcuts — registerShortcut(), Key IDs |
 
 ---
@@ -426,10 +543,10 @@ The final report is assembled as follows:
 ```markdown
 # Research Report: [Topic]
 
-## Abstract                    ← Written by MANAGER (abstracts only)
+## Abstract                    ← Written by MANAGER (summaries only)
 [Brief overview of findings]
 
-## Introduction                ← Written by MANAGER (abstracts only)
+## Introduction                ← Written by MANAGER (summaries only)
 [Research context and motivation]
 
 ## [Section 1]                 ← Written by SECTION-WRITER (full papers)
@@ -444,7 +561,7 @@ Reviewed by: SECTION-CRITIC ✓
 [Body content with proper citations]
 Reviewed by: SECTION-CRITIC ✓
 
-## Conclusions                 ← Written by MANAGER (abstracts only)
+## Conclusions                 ← Written by MANAGER (summaries only)
 [Synthesis of all findings, implications, future directions]
 
 ## References                  ← Compiled from all sections
@@ -453,114 +570,61 @@ Reviewed by: SECTION-CRITIC ✓
 ## Information Flow
 
 ```
-Manager (abstracts) ─────────────────────────────► Abstract/Intro/Conclusions
-         │
-         ▼ (abstracts only)
-Researcher (metadata) ────────────────────────────► Search results, metadata
-         │
-         ▼ (download & parse)
-    .research/papers/*.md ──────────────────────────► Section-writer (full papers)
-         │
-         ▼ (written sections)
-Section-critic (sections + sources) ─────────────► Quality review
-         │
-         ▼ (approved sections)
-    Manager (assembles final report)
+┌─────────────────────────────────────────────────────────────────┐
+│  COMPARTMENTALIZED FLOW                                          │
+│                                                                  │
+│  User Request ──► Manager (sees: summaries)                     │
+│                        │                                         │
+│                        ▼ (delegate: search)                     │
+│                  Researcher (sees: abstracts + 50 lines)        │
+│                        │                                         │
+│                   Need full content?                            │
+│                        │                                         │
+│                        ▼ (delegate: full analysis)              │
+│                  Scientist (sees: everything)                   │
+│                        │                                         │
+│                        ▼ (returns: structured summary)          │
+│                  Manager (sees: summary only)                   │
+│                                                                  │
+│  ═══════════════════════════════════════════════════════════════ │
+│  RULES:                                                         │
+│  • Manager NEVER reads full content directly                   │
+│  • Manager NEVER calls web_search                              │
+│  • Scientist NEVER returns full paper text to manager          │
+│  • All full content stays with scientist (or section-writer)    │
+│  • role-restricted-search automatically filters by role        │
+│  ═══════════════════════════════════════════════════════════════ │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-## Tool Reference
-
-### query_researchers
-
-Query multiple research agents in parallel:
-
-```javascript
-query_researchers({
-  queries: [
-    { agent: "researcher", question: "Search for papers on neural architecture search" },
-    { agent: "scientist", question: "Analyze the methodology of paper 2103.14030" }
-  ]
-})
-```
-
-### Shell Scripts
-
-```bash
-# Search academic databases
-/research-workflow/scripts/search.sh "<query>" <max-results>
-
-# Download and parse paper
-/research-workflow/scripts/download.sh <arxiv-id>
-
-# Analyze papers
-/research-workflow/scripts/analyze.sh
-
-# Generate report
-/research-workflow/scripts/report.sh
-```
-
-## Example Workflow
+## Example Workflow (Compartmentalized)
 
 ```
 User: I need a report on transformer architectures
 
-Manager: Let me clarify the scope:
-1. What specific aspects? (attention, architecture, applications)
-2. Depth level? (foundational, recent advances, comprehensive)
-3. Citation style? (APA, IEEE, MLA)
+Manager: I will delegate all content requests.
 
-User: Focus on self-attention mechanisms, comprehensive coverage, IEEE style
+Manager ──► [DELEGATE:researcher] Search for: transformer self-attention
 
-Researcher: Searching arXiv...
-Found 10 papers for "self-attention transformer"
+Researcher: [role-restricted-search returns: abstracts only]
+  → Found 10 papers
+  → Manager sees: titles + 2-sentence abstracts
 
-Manager: Selecting 5 most relevant papers...
+Manager ──► [DELEGATE:researcher] Get first 50 lines of: paper-123
 
-Researcher: Downloading and parsing...
-✅ 2103.14030.md - Attention Is All You Need
-✅ 1810.04805.md - BERT: Pre-training...
-✅ 1706.03762.md - The Annotated Transformer
-...
+Researcher: [limited to 50 lines]
+  → Manager sees: first excerpt only
 
-Section-writer (Methodology): Reading .research/papers/*.md
-Writing methodology section with citations [Vaswani, 2017], [Devlin, 2018]...
+Manager ──► [DELEGATE:scientist] Full methodology analysis of: paper-123
 
-Section-critic: Reviewing methodology section
-✓ Citation format: IEEE compliant
-✓ Technical accuracy: Verified
-⚠ Minor: Expand comparison in section 2.3
+Scientist: [full-document-access grants full access]
+  → Reads complete methodology section
+  → Returns structured analysis summary to manager
+  → Manager NEVER sees full paper text
 
-Section-writer (Results): Reading .research/papers/*.md
-Writing results section...
+Scientist ──► "Methodology Summary: [key points only]"
 
-[Repeat for each body section]
-
-Manager: Assembling final report...
-Writing Abstract, Introduction, Conclusions based on all sections...
-
-Final Report:
-# Self-Attention Mechanisms in Transformer Architectures
-
-## Abstract
-[Manager writes from abstracts + section summaries]
-
-## Introduction
-[Manager writes from understanding of full structure]
-
-## Methodology
-[Section-writer writes from full papers]
-Reviewed by: Section-critic ✓
-
-## Results
-[Section-writer writes from full papers]
-Reviewed by: Section-critic ✓
-
-## Analysis & Discussion
-[Section-writer writes from full papers]
-Reviewed by: Section-critic ✓
-
-## Conclusions
-[Manager writes synthesis of all findings]
+Manager: Assembles report from summaries only.
 ```
 
 ## Dependencies
@@ -722,6 +786,12 @@ tracing_tags:
   - paper-discovery
   - liteparse
 
+# .pi/agents/scientist.md
+tracing: true
+tracing_tags:
+  - research
+  - deep-analysis
+
 # .pi/agents/section-writer.md
 tracing: true
 tracing_tags:
@@ -762,3 +832,77 @@ Open Langfuse dashboard at `http://192.168.0.186:3000` to view:
 - Token usage and costs
 - Tool execution times
 - Message content and metadata
+
+---
+
+## Prompt Templates (`.pi/prompts/`)
+
+**research-team-launch.md** — Launches compartmentalized research team:
+
+```markdown
+# Research Team Launch
+
+You are about to start a research project with strict information compartmentalization.
+
+## Your Team
+
+| Agent | Access | Role |
+|-------|--------|------|
+| **You (Manager)** | Summaries only | Orchestration, synthesis, reporting |
+| **researcher** | Abstracts + 50 lines | Discovery, search, surface analysis |
+| **scientist** | Full content | Deep analysis, data extraction |
+
+## Information Flow
+
+    You (Manager)
+         │
+         ▼
+    [researcher] ← Sees only abstracts/summaries
+         │
+    Need full content?
+         │
+         ▼
+    [scientist] ← Has full access, returns summary
+         │
+         ▼
+    You (Manager) ← Sees only returned summary
+```
+
+Usage: `/research-team-launch "quantum computing healthcare" "drug discovery"`
+
+## Tool Reference
+
+### query_researchers
+
+Query multiple research agents in parallel:
+
+```javascript
+query_researchers({
+  queries: [
+    { agent: "researcher", question: "Search for papers on neural architecture search" },
+    { agent: "scientist", question: "Analyze the methodology of paper 2103.14030" }
+  ]
+})
+```
+
+### Shell Scripts
+
+```bash
+# Search academic databases
+/research-workflow/scripts/search.sh "<query>" <max-results>
+
+# Download and parse paper
+/research-workflow/scripts/download.sh <arxiv-id>
+
+# Analyze papers
+/research-workflow/scripts/analyze.sh
+
+# Generate report
+/research-workflow/scripts/report.sh
+
+# Role-restricted search (filters by calling agent)
+/pi/skills/role-restricted-search/scripts/search.sh "<query>" --num 10
+
+# Full document access (scientist only)
+/pi/skills/full-document-access/scripts/fetch-document.sh <url> --section methodology
+```
