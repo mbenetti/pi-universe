@@ -1,11 +1,9 @@
-# pi-vs-cc
+# pi-universe — The Ultimate Pi Extension Suite
 
-A collection of [Pi Coding Agent](https://github.com/mariozechner/pi-coding-agent) customized instances. _Why?_ To showcase what it looks like to hedge against the leader in the agentic coding market, Claude Code. Here we showcase how you can customize the UI, agent orchestration tools, safety auditing, and cross-agent integrations. 
-
-> Watch the [video](https://youtu.be/f8cfH5XX-XU) to see pi in action.
+A comprehensive workspace of customized instances, widgets, and multi-agent orchestrations for the [Pi Coding Agent](https://github.com/mariozechner/pi-coding-agent). This suite showcases how to completely customize the TUI/UI layout, implement real-time safety auditing firewalls, sync commands across other coding packages, and orchestrate advanced background agent chains.
 
 <div align="center">
-  <img src="./images/pi-logo.png" alt="pi-vs-cc" width="700">
+  <img src="./images/pi-logo.png" alt="pi-universe" width="700">
 </div>
 
 ---
@@ -265,5 +263,3 @@ Side-by-side comparison of lifecycle hooks in [Claude Code](https://docs.anthrop
 > Prepare for the future of software engineering
 
 Learn tactical agentic coding patterns with [Tactical Agentic Coding](https://agenticengineer.com/tactical-agentic-coding?y=pivscc)
-
-Follow the [IndyDevDan YouTube channel](https://www.youtube.com/@indydevdan) to improve your agentic coding advantage.
