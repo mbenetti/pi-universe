@@ -27,9 +27,15 @@ import { Text, truncateToWidth, visibleWidth } from "@mariozechner/pi-tui";
 import { spawn } from "child_process";
 import { readFileSync, existsSync, readdirSync, mkdirSync, unlinkSync } from "fs";
 import { join, resolve } from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 import { applyExtensionDefaults } from "./themeMap.ts";
 
 // ── Types ────────────────────────────────────────
+
+const extDir = dirname(fileURLToPath(import.meta.url));
+const packageRoot = resolve(extDir, "..");
+const packageAgentsDir = join(packageRoot, ".pi", "agents");
 
 interface ChainStep {
 	agent: string;
@@ -164,6 +170,7 @@ function scanAgentDirs(cwd: string): Map<string, AgentDef> {
 		join(cwd, "agents"),
 		join(cwd, ".claude", "agents"),
 		join(cwd, ".pi", "agents"),
+		packageAgentsDir, // FALLBACK: Look into the globally installed package agents directory
 	];
 
 	const agents = new Map<string, AgentDef>();
@@ -213,7 +220,10 @@ export default function (pi: ExtensionAPI) {
 			agentSessions.set(key, existsSync(sessionFile) ? sessionFile : null);
 		}
 
-		const chainPath = join(cwd, ".pi", "agents", "agent-chain.yaml");
+		let chainPath = join(cwd, ".pi", "agents", "agent-chain.yaml");
+		if (!existsSync(chainPath)) {
+			chainPath = join(packageAgentsDir, "agent-chain.yaml");
+		}
 		if (existsSync(chainPath)) {
 			try {
 				chains = parseChainYaml(readFileSync(chainPath, "utf-8"));

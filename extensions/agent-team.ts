@@ -36,10 +36,16 @@ import { Text, type AutocompleteItem, truncateToWidth, visibleWidth } from "@mar
 import { spawn } from "child_process";
 import { readdirSync, readFileSync, existsSync, mkdirSync, unlinkSync } from "fs";
 import { join, resolve } from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 import * as os from "os";
 import { applyExtensionDefaults } from "./themeMap.ts";
 
 // ── Types ────────────────────────────────────────
+
+const extDir = dirname(fileURLToPath(import.meta.url));
+const packageRoot = resolve(extDir, "..");
+const packageAgentsDir = join(packageRoot, ".pi", "agents");
 
 interface AgentDef {
 	name: string;
@@ -153,6 +159,7 @@ function scanAgentDirs(cwd: string): AgentDef[] {
 		join(cwd, "agents"),
 		join(cwd, ".claude", "agents"),
 		join(cwd, ".pi", "agents"),
+		packageAgentsDir, // FALLBACK: Look into the globally installed package agents directory
 	];
 
 	const agents: AgentDef[] = [];
@@ -200,7 +207,10 @@ export default function (pi: ExtensionAPI) {
 		allAgentDefs = scanAgentDirs(cwd);
 
 		// Load teams from .pi/agents/teams.yaml
-		const teamsPath = join(cwd, ".pi", "agents", "teams.yaml");
+		let teamsPath = join(cwd, ".pi", "agents", "teams.yaml");
+		if (!existsSync(teamsPath)) {
+			teamsPath = join(packageAgentsDir, "teams.yaml");
+		}
 		if (existsSync(teamsPath)) {
 			try {
 				teams = parseTeamsYaml(readFileSync(teamsPath, "utf-8"));
