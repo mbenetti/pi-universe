@@ -1,13 +1,30 @@
 {
-  "name": "pi-vs-cc",
+  "name": "pi-universe",
+  "version": "1.0.0",
+  "description": "Pi Coding Agent extension playground and universe of custom tools",
   "private": true,
   "type": "module",
-  "description": "Pi Coding Agent extension playground",
   "dependencies": {
     "langfuse-node": "^3.38.20",
     "yaml": "^2.8.0"
   },
   "devDependencies": {
     "typescript": "^6.0.3"
+  },
+  "pi": {
+    "extensions": [
+      "./extensions/*.ts",
+      "!./extensions/themeMap.ts",
+      "!./extensions/research-tui.ts"
+    ],
+    "skills": [
+      "./skills"
+    ],
+    "prompts": [
+      "./prompts"
+    ],
+    "themes": [
+      "./themes"
+    ]
   }
 }

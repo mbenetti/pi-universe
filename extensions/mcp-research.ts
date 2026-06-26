@@ -13,6 +13,7 @@
 import { spawn, ChildProcess } from "child_process";
 import { EventEmitter } from "events";
 import { Type, Static } from "@sinclair/typebox";
+import { StringEnum } from "@mariozechner/pi-ai";
 
 // MCP Protocol Types
 interface MCPRequest {
@@ -40,7 +41,7 @@ interface MCPServerConfig {
 const SearchParams = Type.Object({
   query: Type.String({ description: "Search query for academic papers" }),
   maxResults: Type.Optional(Type.Number({ description: "Maximum results to return", default: 10 })),
-  source: Type.Optional(Type.StringEnum(["zotero", "google-scholar", "arxiv", "all"] as const, { description: "Source to search" })),
+  source: Type.Optional(StringEnum(["zotero", "google-scholar", "arxiv", "all"] as const, { description: "Source to search" })),
 });
 
 const DownloadParams = Type.Object({
@@ -356,7 +357,7 @@ export default ({ pi }: { pi: Pi }) => {
     name: "research_session",
     description: "Manage research session: set goal, list papers, get recommendations",
     parameters: Type.Object({
-      action: Type.StringEnum(["status", "set-goal", "list-papers", "recommend", "export"] as const),
+      action: StringEnum(["status", "set-goal", "list-papers", "recommend", "export"] as const),
       goal: Type.Optional(Type.String()),
       paperId: Type.Optional(Type.String()),
     }),

@@ -141,3 +141,7 @@ export function applyExtensionDefaults(fileUrl: string, ctx: ExtensionContext): 
 	applyExtensionTheme(fileUrl, ctx);
 	applyExtensionTitle(ctx);
 }
+
+export default function themeMapPlaceholder() {
+	// acts as an empty extension to prevent discovery/load errors when scanned in extensions/
+}

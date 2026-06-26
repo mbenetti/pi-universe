@@ -119,7 +119,7 @@ export default function (pi: ExtensionAPI) {
           const tavilyResult = await tryTavily(params, signal);
           if (tavilyResult) {
             return {
-              content: [{ type: "text", tavilyResult.summary }],
+              content: [{ type: "text", text: tavilyResult.summary }],
               details: {
                 source: "tavily" as const,
                 results: tavilyResult.results,
