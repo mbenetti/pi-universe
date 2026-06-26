@@ -14,3 +14,9 @@ __pycache__/
 .playwright-cli/
 
 tmp/
+
+# Literature search caches, reports, and downloaded PDFs
+.research/
+
+# Python virtual environment and local scripts
+research/
