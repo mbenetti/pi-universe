@@ -63,52 +63,152 @@ just ext-minimal  # works for all recipes, not just `pi`
 
 ## Installation
 
+You can deploy and use this extension suite either by installing it as a global package across any computer (quickest route) or by cloning the repository for local development.
+
+### Option A: Global Installation (Recommended)
+This requires no manual repository cloning. Install the complete workspace of extensions, skills, prompts, and custom themes directly onto any machine running Pi with a single command:
+
 ```bash
-bun install
+pi install git:github.com/mbenetti/pi-universe.git
 ```
+
+This registers the complete suite under your global `~/.pi/agent/` cache, automatically builds dependencies (such as `yaml` and `langfuse-node`), and registers all visual assets.
+
+---
+
+### Option B: Local Developer Checkout
+To run and modify extensions from a local clone:
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/mbenetti/pi-universe.git
+   cd pi-universe
+   ```
+2. **Install local dependencies:**
+   ```bash
+   bun install
+   ```
+
+---
+
+## 🚀 Starting Pi for the First Time (Quick Start Guide)
+
+When launching `pi` with this package loaded, here is what you will experience and how to interact with it:
+
+### 1. Declaring Your Session Intent (The Purpose Gate)
+On startup, you will be prompted with:
+```
+ What is the purpose of this agent?
+ > 
+```
+* **What to type:** Simply type a short, one-sentence goal of what you want to accomplish in this session (e.g., `Review files and verify extensions` or `I want to research quantum computing in healthcare`) and press **Enter**.
+* **What happens:** Your declared purpose is locked in and pinned as a **persistent widget** on your active terminal screen, keeping you and the model aligned. The interactive prompt `> ` will open up immediately.
+
+### 2. Solving Theme Loading Warnings ("Failed to load theme Dracula")
+If your startup displays a theme load warning like:
+`Error: Failed to load theme "dracula": Theme not found: dracula`
+* **What to do:** Do not worry! Since Pi falls back gracefully, you can hot-swap themes on the fly. Simply press **`F5`** (cycle forward) or **`F4`** (cycle backward) on your keyboard, or type **`/theme`** directly inside your prompt to pop open an interactive visual picker and select from 11 gorgeous cosmos themes (such as `synthwave`, `everforest`, or `midnight-ocean`)!
+
+### 3. Folder-Independent Agent Fallbacks (Zero Configuration)
+If you run `pi` inside a clean / empty directory (like a barren `/workspaces/uv` container folder), you might see `No agents found` or `teams.yaml not found`.
+* **What to do:** Absolutely nothing! `pi-universe` is engineered with **Automatic Package Fallback Resolution**. It will automatically detect that you are in a clean directory and load all your named specialist agents (like `scout`, `scientist`, `research-manager`), pipeline templates, and team sets (`teams.yaml`) directly from its global package folder as a fallback!
+
+---
+
+## Usage & Levels of Pi
+
+You can mix, match, and stack layers of these extensions. Choose the "Level" that maps to your immediate productivity goals.
+
+### Running with Global Installation
+If you installed globally via `pi install`, trigger your extensions using their package specifiers:
+```bash
+pi -e pi-universe/extensions/minimal.ts
+# Or stack multiple:
+pi -e pi-universe/extensions/purpose-gate.ts -e pi-universe/extensions/minimal.ts
+```
+To enable or disable specific parts of your package, run:
+```bash
+pi config
+```
+
+### Running with a Local Clone (`just` Recipes)
+If you did a local developer checkout, we provide pre-packaged commands bundled into **4 progressive levels** of developer experience. Use the `just` task runner to fire up any level instantly.
+
+---
+
+### 🎨 Level 1: Minimalist Layouts & Aesthetic Customizations
+Focuses entirely on cleaning up the console footprint, allowing you to maximize screen space and track context windows cleanly.
+
+*   **`just ext-pure-focus`** (Plain UI)
+    *   *What it does:* Strips all headers, status lines, and footers entirely. Zero interface distraction.
+    *   *Theme default:* `Everforest`
+*   **`just ext-minimal`** (Compact Meter)
+    *   *What it does:* Replaces the status line with a simple footer showing model name and a concise, custom 10-block context-window fill-rate meter `[###-------] 30%`.
+    *   *Theme default:* `Synthwave`
+*   **`just ext-theme-cycler`** (Color Swapping)
+    *   *What it does:* Enables quick-swap shortcuts (`F5`/`F4`) to cycle themes in real-time or select theme schemes manually in-shell via the `/theme` command.
+    *   *Theme default:* `Synthwave`
+
+---
+
+### 🧱 Level 2: Task Discipline & Interaction Widgets
+Interactive heads-up-display panels to keep you structured and focused on specific goals.
+
+*   **`just ext-purpose-gate`** (Intent Locking)
+    *   *What it does:* Blocks inputs and triggers a screen modal prompting you to register your specific high-level "Single Purpose" target on boot. Keeps it pinned as a visual widget.
+    *   *Theme default:* `Tokyo Night`
+*   **`just ext-tilldone`** (Interactive Todo Lists)
+    *   *What it does:* Demands a sequential sub-task list before you can begin. Tracks status updates across files and steps and displays active progress bars in the HUD.
+    *   *Theme default:* `Everforest`
+*   **`just ext-tool-counter`** (Classic Cost Metrics)
+    *   *What it does:* Provides a rich, double-line footer containing model names, estimated API cost counters, active git branches, work folders, and full tool execution tallies.
+    *   *Theme default:* `Synthwave`
+*   **`just ext-tool-counter-widget`** (Real-Time Function Meters)
+    *   *What it does:* Creates a highlighted widget right above your command editor listing exactly how many times `bash`, `read`, `edit`, and `write` have executed.
+    *   *Theme default:* `Synthwave`
+*   **`just ext-session-replay`** (Conversation Playback)
+    *   *What it does:* Overlays a keyboard-navigable scrollable list showing past message pairs so you can trace what occurred without cluttering active scrollback.
+    *   *Theme default:* `Catppuccin Mocha`
+
+---
+
+### 🛡️ Level 3: Personas, Interoperability, & Security
+For syncing workspaces across other coding tools and locking down agent operations with safety filters.
+
+*   **`just ext-system-select`** (In-Shell Role Selection)
+    *   *What it does:* Registers a customized `/system` utility in your prompt, popping open a dialog to hot-swap your model persona (e.g., Debugger, Tech Writer, Senior Dev) mid-session.
+    *   *Theme default:* `Catppuccin Mocha`
+*   **`just ext-cross-agent`** (Claude Code Sync)
+    *   *What it does:* Checks local directories for Claude Code (`.claude/`), Gemini (`.gemini/`), or Codex (`.codex/`) formats to seamlessly sync prompts, skills, and system rules into Pi.
+    *   *Theme default:* `Ocean Breeze`
+*   **`just ext-damage-control`** (Command Restricting Firewalls)
+    *   *What it does:* Runs absolute safety audits on destructive terminal actions (regex checks for `rm`, `git reset`, DB deletions, and sensitive path access) and halts execution to ask for developer authorization.
+    *   *Theme default:* `Gruvbox`
+
+---
+
+### 🧬 Level 4: Pipelines & Multi-Agent Teams
+The highest tier. Deploys autonomous grid layouts, sequential pipes, background helpers, and deep RAG.
+
+*   **`just ext-subagent-widget`** (Asynchronous Background Runs)
+    *   *What it does:* Adds support for `/sub <task>` commands. Spawns headless sub-agents to digest isolated problems and displays streaming execution status cards above the main shell.
+    *   *Theme default:* `Cyberpunk`
+*   **`just ext-agent-chain`** (Sequential Pipeline Orchestration)
+    *   *What it does:* Feeds initial users prompts sequentially through a pipeline map (e.g., scoping $\rightarrow$ plan $\rightarrow$ build $\rightarrow$ review). Select plans with `/chain`.
+    *   *Theme default:* `Midnight Ocean`
+*   **`just ext-agent-team`** (Split-Screen Persona Grid)
+    *   *What it does:* Generates a split-screen dashboard grid orchestration. The primary dispatcher receives prompts and delegates actions out to agent specialists (`research-manager`, `scientist`, `critic`).
+    *   *Theme default:* `Dracula`
+*   **`just ext-pi-pi`** (The Generative Meta-Agent)
+    *   *What it does:* Uses parallel framework expert models to build customized, tested Pi extensions, scanning literature and codebases dynamically.
+    *   *Theme default:* `Rose Pine`
+*   **`just ext-research-pipeline`** (Specialized Academic Search)
+    *   *What it does:* High-context optimizer. Resolves paper abstracts, indexes citations, and pulls deep chunks via background sub-agents instead of dumping heavy PDFs into your active context limit.
+    *   *Theme default:* `Midnight Ocean`
 
 ---
 
 ## Extensions
-
-| Extension               | File                                | Description                                                                                                                                                |
-| ----------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **pure-focus**          | `extensions/pure-focus.ts`          | Removes the footer bar and status line entirely — pure distraction-free mode                                                                               |
-| **minimal**             | `extensions/minimal.ts`             | Compact footer showing model name and a 10-block context usage meter `[###-------] 30%`                                                                    |
-| **cross-agent**         | `extensions/cross-agent.ts`         | Scans `.claude/`, `.gemini/`, `.codex/` dirs for commands, skills, and agents and registers them in Pi                                                     |
-| **purpose-gate**        | `extensions/purpose-gate.ts`        | Prompts you to declare session intent on startup; shows a persistent purpose widget and blocks prompts until answered                                      |
-| **tool-counter**        | `extensions/tool-counter.ts`        | Rich two-line footer: model + context meter + token/cost stats on line 1, cwd/branch + per-tool call tally on line 2                                       |
-| **tool-counter-widget** | `extensions/tool-counter-widget.ts` | Live-updating above-editor widget showing per-tool call counts with background colors                                                                      |
-| **subagent-widget**     | `extensions/subagent-widget.ts`     | `/sub <task>` command that spawns background Pi subagents; each gets its own streaming live-progress widget                                                |
-| **tilldone**            | `extensions/tilldone.ts`            | Task discipline system — define tasks before starting work; tracks completion state across steps; shows persistent task list in footer with live progress  |
-| **agent-team**          | `extensions/agent-team.ts`          | Dispatcher-only orchestrator: the primary agent delegates all work to named specialist agents via `dispatch_agent`; shows a grid dashboard                 |
-| **system-select**       | `extensions/system-select.ts`       | `/system` command to interactively switch between agent personas/system prompts from `.pi/agents/`, `.claude/agents/`, `.gemini/agents/`, `.codex/agents/` |
-| **damage-control**      | `extensions/damage-control.ts`      | Real-time safety auditing — intercepts dangerous bash patterns and enforces path-based access controls from `.pi/damage-control-rules.yaml`                |
-| **agent-chain**         | `extensions/agent-chain.ts`         | Sequential pipeline orchestrator — chains multiple agents where each step's output feeds into the next step's prompt; use `/chain` to select and run       |
-| **pi-pi**               | `extensions/pi-pi.ts`               | Meta-agent that builds Pi agents using parallel research experts for documentation                                                                         |
-| **session-replay**      | `extensions/session-replay.ts`      | Scrollable timeline overlay of session history - showcasing customizable dialog UI                                                                         |
-| **theme-cycler**        | `extensions/theme-cycler.ts`        | Keyboard shortcuts (Ctrl+X/Ctrl+Q) and `/theme` command to cycle/switch between custom themes                                                              |
-
----
-
-
-## Usage
-
-### Run a single extension
-
-```bash
-pi -e extensions/<name>.ts
-```
-
-### Stack multiple extensions
-
-Extensions compose — pass multiple `-e` flags:
-
-```bash
-pi -e extensions/minimal.ts -e extensions/cross-agent.ts
-```
-
-### Use `just` recipes
 
 `just` wraps the most useful combinations. Run `just` with no arguments to list all available recipes:
 
