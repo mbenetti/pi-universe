@@ -152,7 +152,7 @@ export default function (pi: ExtensionAPI) {
 
       // Both failed
       return {
-        content: [{ type: "text", "Both search engines failed. Try checking your internet connection." }],
+        content: [{ type: "text", text: "Both search engines failed. Try checking your internet connection." }],
         details: {
           source: "none",
           error: "Tavily and Ollama web search both failed. Check API keys and connection.",
@@ -231,7 +231,7 @@ export default function (pi: ExtensionAPI) {
       const result = await tryTavily(params, signal);
       if (result) {
         return {
-          content: [{ type: "text", result.summary }],
+          content: [{ type: "text", text: result.summary }],
           details: {
             source: "tavily",
             results: result.results,
@@ -299,7 +299,7 @@ export default function (pi: ExtensionAPI) {
       const result = await tryOllamaWebSearch(params.query, params.limit ?? 5, signal, ctx);
       if (result) {
         return {
-          content: [{ type: "text", result.summary }],
+          content: [{ type: "text", text: result.summary }],
           details: {
             source: "ollama",
             results: result.results,
