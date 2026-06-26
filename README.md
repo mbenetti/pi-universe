@@ -131,6 +131,37 @@ To enable or disable specific parts of your package, run:
 pi config
 ```
 
+### 💡 Universal Shell Aliases (Shorthand for Global Installs)
+
+If you installed globally via `pi install` and do not want to clone the repository to use `just` recipes, you can add these fast shorthand aliases directly to your shell configuration file (`~/.bashrc` or `~/.zshrc`). This gives you the **exact same short-key convenience anywhere on your system**:
+
+```bash
+# Level 1: Aesthetics & Layouts
+alias pi-focus="pi -ne -e pi-universe/extensions/pure-focus.ts"
+alias pi-minimal="pi -ne -e pi-universe/extensions/minimal.ts -e pi-universe/extensions/theme-cycler.ts"
+
+# Level 2: Task HUDs & Disciplines
+alias pi-gate="pi -ne -e pi-universe/extensions/purpose-gate.ts -e pi-universe/extensions/minimal.ts"
+alias pi-tilldone="pi -ne -e pi-universe/extensions/tilldone.ts -e pi-universe/extensions/theme-cycler.ts"
+alias pi-counter="pi -ne -e pi-universe/extensions/tool-counter.ts"
+alias pi-widgets="pi -ne -e pi-universe/extensions/tool-counter-widget.ts -e pi-universe/extensions/minimal.ts"
+alias pi-replay="pi -ne -e pi-universe/extensions/session-replay.ts -e pi-universe/extensions/minimal.ts"
+
+# Level 3: Personas & Security
+alias pi-system="pi -ne -e pi-universe/extensions/system-select.ts -e pi-universe/extensions/minimal.ts -e pi-universe/extensions/theme-cycler.ts"
+alias pi-safety="pi -ne -e pi-universe/extensions/damage-control.ts -e pi-universe/extensions/minimal.ts -e pi-universe/extensions/theme-cycler.ts"
+
+# Level 4: Orchestration, Teams & Pipelines
+alias pi-team="pi -ne -e pi-universe/extensions/agent-team.ts -e pi-universe/extensions/theme-cycler.ts"
+alias pi-pi="pi -ne -e pi-universe/extensions/pi-pi.ts -e pi-universe/extensions/theme-cycler.ts"
+alias pi-chain="pi -ne -e pi-universe/extensions/agent-chain.ts -e pi-universe/extensions/theme-cycler.ts"
+alias pi-research="pi -ne -e pi-universe/extensions/research-pipeline.ts -e pi-universe/extensions/theme-cycler.ts"
+```
+
+Once pasted, simply reload your terminal (`source ~/.zshrc` or `source ~/.bashrc`) and type **`pi-team`** or **`pi-pi`** from *any* folder on your machine!
+
+---
+
 ### Running with a Local Clone (`just` Recipes)
 If you did a local developer checkout, we provide pre-packaged commands bundled into **4 progressive levels** of developer experience. Use the `just` task runner to fire up any level instantly.
 
