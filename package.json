@@ -19,13 +19,13 @@
       "!extensions/tavily.ts"
     ],
     "skills": [
-      "skills"
+      ".pi/skills"
     ],
     "prompts": [
-      "prompts"
+      ".pi/prompts"
     ],
     "themes": [
-      "themes"
+      ".pi/themes"
     ]
   }
 }
