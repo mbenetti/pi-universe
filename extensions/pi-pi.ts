@@ -21,9 +21,15 @@ import { Text, truncateToWidth, visibleWidth } from "@mariozechner/pi-tui";
 import { spawn } from "child_process";
 import { readdirSync, readFileSync, existsSync, mkdirSync } from "fs";
 import { join, resolve } from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 import { applyExtensionDefaults } from "./themeMap.ts";
 
 // ── Types ────────────────────────────────────────
+
+const extDir = dirname(fileURLToPath(import.meta.url));
+const packageRoot = resolve(extDir, "..");
+const packagePiPiDir = join(packageRoot, ".pi", "agents", "pi-pi");
 
 interface ExpertDef {
 	name: string;
@@ -103,7 +109,10 @@ export default function (pi: ExtensionAPI) {
 
 	function loadExperts(cwd: string) {
 		// Pi Pi experts live in their own dedicated directory
-		const piPiDir = join(cwd, ".pi", "agents", "pi-pi");
+		let piPiDir = join(cwd, ".pi", "agents", "pi-pi");
+		if (!existsSync(piPiDir)) {
+			piPiDir = packagePiPiDir;
+		}
 
 		experts.clear();
 
@@ -587,7 +596,10 @@ Ask specific questions about what you need to BUILD. Each expert will return doc
 
 		const expertNames = Array.from(experts.values()).map(s => displayName(s.def.name)).join(", ");
 
-		const orchestratorPath = join(_ctx.cwd, ".pi", "agents", "pi-pi", "pi-orchestrator.md");
+		let orchestratorPath = join(_ctx.cwd, ".pi", "agents", "pi-pi", "pi-orchestrator.md");
+		if (!existsSync(orchestratorPath)) {
+			orchestratorPath = join(packagePiPiDir, "pi-orchestrator.md");
+		}
 		let systemPrompt = "";
 		try {
 			const raw = readFileSync(orchestratorPath, "utf-8");
