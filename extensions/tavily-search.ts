@@ -466,8 +466,7 @@ export default function (pi: ExtensionAPI) {
   // CLI COMMANDS
   // ============================================================
 
-  pi.registerCommand({
-    name: "search",
+  pi.registerCommand("search", {
     description: "Quick web search with automatic fallback",
     async execute(args, _ctx) {
       const query = args.join(" ");
@@ -496,8 +495,7 @@ export default function (pi: ExtensionAPI) {
     },
   });
 
-  pi.registerCommand({
-    name: "tavily",
+  pi.registerCommand("tavily", {
     description: "Quick Tavily search from command line",
     async execute(args, _ctx) {
       const query = args.join(" ");
