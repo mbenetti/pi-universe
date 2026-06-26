@@ -1,7 +1,7 @@
 ---
 name: section-writer
 description: Writes specific report sections using paper analysis. Receives topic, research findings, and section requirements. Produces citation-ready content for body sections only.
-tools: read,grep,find,ls,bash
+tools: read,write,grep,find,ls,bash
 color: "#10b981"
 tracing: true
 tracing_tags:

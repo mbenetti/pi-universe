@@ -36,6 +36,7 @@ import { Text, type AutocompleteItem, truncateToWidth, visibleWidth } from "@mar
 import { spawn } from "child_process";
 import { readdirSync, readFileSync, existsSync, mkdirSync, unlinkSync } from "fs";
 import { join, resolve } from "path";
+import * as os from "os";
 import { applyExtensionDefaults } from "./themeMap.ts";
 
 // ── Types ────────────────────────────────────────
@@ -186,6 +187,7 @@ export default function (pi: ExtensionAPI) {
 	let widgetCtx: any;
 	let sessionDir = "";
 	let contextWindow = 0;
+	let currentModelId = "";
 
 	function loadAgents(cwd: string) {
 		// Create session storage dir
@@ -399,10 +401,19 @@ export default function (pi: ExtensionAPI) {
 		// from massive tool results (e.g. full papers read by scientist)
 		try { unlinkSync(agentSessionFile); } catch {}
 
+		// Resolve web-search extension path so spawned agents can call web_search
+		const searchPaths = [
+			join(cwd, ".pi", "npm", "node_modules", "@ollama", "pi-web-search", "index.ts"),
+			"/opt/homebrew/lib/node_modules/@ollama/pi-web-search/index.ts",
+			join(os.homedir(), ".local", "share", "pi", "node_modules", "@ollama", "pi-web-search", "index.ts"),
+		];
+		const webSearchPath = searchPaths.find(p => existsSync(p));
+
 		const args = [
 			"--mode", "json",
 			"-p",
 			"--no-extensions",
+			...(webSearchPath ? ["-e", webSearchPath] : []),
 			"--model", model,
 			"--tools", state.def.tools,
 			"--thinking", "off",
@@ -852,6 +863,7 @@ ${agentCatalog}`,
 		}
 		widgetCtx = _ctx;
 		contextWindow = _ctx.model?.contextWindow || 0;
+		currentModelId = _ctx.model?.id || "pi";
 
 		// Wipe old agent session files so subagents start fresh
 		const sessDir = join(_ctx.cwd, ".pi", "agent-sessions");
@@ -891,9 +903,19 @@ ${agentCatalog}`,
 			dispose: () => {},
 			invalidate() {},
 			render(width: number): string[] {
-				const model = _ctx.model?.id || "no-model";
-				const usage = _ctx.getContextUsage();
-				const pct = usage ? usage.percent : 0;
+				let model = currentModelId;
+				let usage = { percent: 0, tokens: 0 };
+				
+				try {
+					const currentUsage = _ctx.getContextUsage();
+					if (currentUsage) {
+						usage = currentUsage;
+					}
+				} catch (e) {
+					// Runner or context is stale
+				}
+				
+				const pct = usage.percent;
 				const filled = Math.max(0, Math.min(10, Math.round(pct / 10)));
 				const bar = "#".repeat(filled) + "-".repeat(10 - filled);
 
@@ -906,5 +928,12 @@ ${agentCatalog}`,
 				return [truncateToWidth(left + pad + right, width)];
 			},
 		}));
+	});
+
+	pi.on("session_shutdown", async (_event, _ctx) => {
+		if (_ctx.ui) {
+			_ctx.ui.setFooter(undefined);
+			_ctx.ui.setWidget("agent-team", undefined);
+		}
 	});
 }

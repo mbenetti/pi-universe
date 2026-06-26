@@ -4,7 +4,7 @@ description: >
   Has full document access for deep analysis.
   Only agent that can read complete papers, methodology, results.
   Use for detailed analysis, comparisons, and comprehensive reviews.
-tools: read,grep,find,ls,bash
+tools: web_search,web_fetch,read,write,grep,find,ls,bash
 ---
 
 # Scientist Agent

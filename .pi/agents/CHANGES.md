@@ -1,98 +1,62 @@
 # Changes Made to Fix Research Team Issues
 
-## Problem
-The research-manager agent kept looping on itself because it could not delegate to other agents (researcher, scientist, section-writer). The root cause was that spawned subprocess agents did NOT have access to `dispatch_agent` tool - only the root dispatcher had it.
+## Fixed Issues
 
-## Solution
+### 🔴 Critical
 
-### 1. Extension Changes (`extensions/agent-team.ts`)
+1. **Research team agents had no web search capability**
+   - Agents were spawned with `--no-extensions` which blocked the `@ollama/pi-web-search` package
+   - `web_search` and `web_fetch` tools from the package were unavailable to subprocess agents
+   - Fix: Added `web_search,web_fetch` to `researcher.md`, `scientist.md`, and `research.md` tools lists
+   - Fix: `agent-team.ts` now resolves and passes `-e` path for the web-search extension to subprocess agents (while keeping `--no-extensions` to prevent UI extension crashes)
+   - `research-manager.md` explicitly does NOT have `web_search` — it must delegate to researcher
 
-**Added Delegation Block Support:**
-- Added `parseDelegationBlocks()` function that parses `[DELEGATE:agent_name]...[/DELEGATE]` blocks from agent output
-- Modified `dispatchAgent()` to process delegation blocks:
-  1. Run the agent subprocess
-  2. Parse any `[DELEGATE:agent_name]` blocks from output
-  3. Dispatch delegated tasks to target agents
-  4. Append results back to the requesting agent's output
-  5. Recursive processing (max depth = 5) to handle nested delegations
+2. **Duplicate agents: `research.md` vs `researcher.md`**
+   - `researcher.md` → Team-member agent for discovery/search within the research team
+   - `research.md` → Standalone quick-search agent for ad-hoc lit reviews (distinct purpose)
+   - Both now have clear frontmatter descriptions that explain which to use when
 
-**Updated Dispatcher System Prompt:**
-- Added clear "Plan → Delegate → Synthesize" workflow guidance
-- Added example research workflow
-- Added explanation of how [DELEGATE] blocks work
-- Agents now know to order dispatches correctly for dependent tasks
+2. **Missing `write` tool on agents that say "save files"**
+   - Added `write` to: `research-manager.md`, `researcher.md`, `scientist.md`, `section-critic.md`
+   - All research-team agents now have `write` available
 
-### 2. Agent Definition Updates
+3. **`bowser.md` references wrong skill name `playwright-bowser`**
+   - Fixed to `bowser` (the actual skill directory name)
 
-**`research-manager.md`** - Now uses `[DELEGATE:agent_name]` blocks to delegate:
-```
-[DELEGATE:researcher]
-Search for papers about "attention mechanisms in transformers".
-[/DELEGATE]
-```
-- Writes only: abstract, introduction, conclusions
-- Delegates all body sections to specialists
+4. **`teams.yaml` missing `planner` agent**
+   - Added `planner` to `research-team` in teams.yaml (was documented in CHANGES.md but never actually added)
 
-**`researcher.md`** - Focused on discovery and extraction:
-- Searches academic databases
-- Downloads papers
-- Returns structured metadata (titles, authors, abstracts)
-- Delegates deep analysis to scientist
+### 🟡 Important
 
-**`scientist.md`** - Focused on critical analysis:
-- Methodology evaluation
-- Research gap identification
-- Scientific critique
-- Can read papers directly
+5. **`research-manager.md` bloated system prompt**
+   - Cut from ~130 lines to ~50 lines
+   - Removed redundant sections (How to Delegate duplicated elsewhere, If You Need Full Content repeated constraints)
+   - Replaced DO/DO NOT table with concise ✅/❌ list
+   - Added clear "Report Ownership" table showing which agent writes what
+   - Kept essential info: delegation format, boundaries, file storage
 
-**`section-writer.md`** - Focused on body section writing:
-- Writes only assigned body sections
-- Does NOT write abstract/introduction/conclusions
-- Uses paper content to write sections with citations
+6. **`research-team-launch.md` outdated — missing section-writer & section-critic**
+   - Expanded team table from 3 agents → 6 agents (added planner, section-writer, section-critic)
+   - Updated information flow diagram to show full pipeline
+   - Added example workflow showing delegation to all agent types
+   - Added "Report Ownership" guidance matching the agent prompts
 
-**`section-critic.md`** - Focused on quality review:
-- Reviews sections for requirements compliance
-- Checks citation style
-- Verifies factual correctness
-- Provides actionable feedback (doesn't rewrite)
+7. **Empty `.pi/skills/research-team/` stub directory**
+   - Created proper `SKILL.md` describing the team orchestration workflow
+   - Documents agent roles, access levels, and data flow
 
-**`planner.md`** - Created for planning role:
-- Creates structured implementation plans
-- Identifies tasks and dependencies
-- Outputs plan that dispatcher can execute step-by-step
+### 🟢 Minor
 
-### 3. Teams.yaml Updates
+8. **Copy-pasted `.research/` save rules across all agents**
+   - Standardized to consistent "Save everything under `.research/` folder" line
+   - Removed redundant sub-bullet lists where possible
 
-Added `planner` to all teams as the planning role:
+9. **`research.md` standalone agent — purpose unclear**
+   - Now has clear description: "Standalone quick-search agent" vs team member
+   - Frontmatter explains when to use this vs the research-manager team
 
-```yaml
-research-team:
-  - planner           # NEW: Creates plans
-  - researcher        # Discovers papers
-  - scientist         # Analyzes papers
-  - section-writer    # Writes body sections
-  - section-critic    # Reviews sections
-  - research-manager  # Orchestrates, writes framework sections
-```
+10. **`section-critic.md` missing `write` tool**
+    - Added `write` to tools list
 
-## New Delegation Syntax
-
-Agents can now delegate using `[DELEGATE:agent_name]` blocks:
-
-```
-[DELEGATE:researcher]
-Search for papers about machine learning optimization. Return titles and abstracts.
-[/DELEGATE]
-```
-
-The dispatcher intercepts these blocks, dispatches the task, and appends results back.
-
-## Workflow (Plan → Delegate → Synthesize)
-
-1. **Dispatcher** receives user request
-2. **Dispatcher** dispatches to `planner` or `research-manager` for planning
-3. **Planner/Manager** creates plan with sub-tasks
-4. **Dispatcher** dispatches each sub-task to appropriate agent
-5. **Agents** may use `[DELEGATE]` blocks for additional work
-6. **Dispatcher** processes delegations and compiles results
-7. **Final output** returned to user
+11. **Broken symlink `.pi/skills/tavily-research`**
+    - Removed dangling symlink pointing to non-existent `../../.agents/skills/tavily-research`

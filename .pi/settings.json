@@ -1,13 +1,11 @@
 {
-  "theme": "synthwave",
-  "prompts": [
-    "../.claude/commands"
-  ],
-  "packages": [
-    "npm:@ollama/pi-web-search"
-  ],
-  "extensions": [
-    "./extensions/tavily-search.ts",
-    "./extensions/minimal.ts"
-  ]
+  "mcpServers": {
+    "tavily": {
+      "command": "npx",
+      "args": ["-y", "@tavily/mcp-server"],
+      "env": {
+        "TAVILY_API_KEY": ""
+      }
+    }
+  }
 }

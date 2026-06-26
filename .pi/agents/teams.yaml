@@ -2,6 +2,7 @@
 # Implements strict information compartmentalization
 
 research-team:
+  - planner
   - research-manager
   - researcher
   - scientist

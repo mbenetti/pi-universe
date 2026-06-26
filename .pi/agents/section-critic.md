@@ -1,7 +1,7 @@
 ---
 name: section-critic
 description: Reviews research report sections for quality, accuracy, citation compliance, and requirements fulfillment. Provides actionable feedback. Use when: sections need validation before final report assembly.
-tools: read,grep,find,ls,bash
+tools: read,write,grep,find,ls,bash
 color: "#f59e0b"
 tracing: true
 tracing_tags:
