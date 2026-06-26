@@ -15,7 +15,8 @@
     "extensions": [
       "extensions/*.ts",
       "!extensions/themeMap.ts",
-      "!extensions/research-tui.ts"
+      "!extensions/research-tui.ts",
+      "!extensions/tavily.ts"
     ],
     "skills": [
       "skills"
