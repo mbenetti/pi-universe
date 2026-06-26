@@ -226,7 +226,7 @@ const MCP_SERVERS: Record<string, MCPServerConfig> = {
 };
 
 // Initialize extension
-export default ({ pi }: { pi: Pi }) => {
+export default (pi: any) => {
   console.log("Loading MCP Research extension...");
 
   // Register MCP search tool

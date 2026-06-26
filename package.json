@@ -13,18 +13,18 @@
   },
   "pi": {
     "extensions": [
-      "./extensions/*.ts",
-      "!./extensions/themeMap.ts",
-      "!./extensions/research-tui.ts"
+      "extensions/*.ts",
+      "!extensions/themeMap.ts",
+      "!extensions/research-tui.ts"
     ],
     "skills": [
-      "./skills"
+      "skills"
     ],
     "prompts": [
-      "./prompts"
+      "prompts"
     ],
     "themes": [
-      "./themes"
+      "themes"
     ]
   }
 }

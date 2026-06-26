@@ -139,7 +139,7 @@ export default function (pi: ExtensionAPI) {
         const ollamaResult = await tryOllamaWebSearch(params.query, params.limit ?? 5, signal, ctx);
         if (ollamaResult) {
           return {
-            content: [{ type: "text", ollamaResult.summary }],
+            content: [{ type: "text", text: ollamaResult.summary }],
             details: {
               source: useFallback ? "fallback" : "ollama",
               results: ollamaResult.results,
