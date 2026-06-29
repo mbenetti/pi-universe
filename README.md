@@ -1,5 +1,7 @@
 # pi-universe — The Ultimate Pi Extensions Suite
 
+This is a fork from : https://github.com/disler/pi-vs-claude-code.git with some modifications.
+
 A comprehensive workspace of customized instances, widgets, and multi-agent orchestrations for the [Pi Coding Agent](https://github.com/mariozechner/pi-coding-agent). This suite showcases how to completely customize the TUI/UI layout, implement real-time safety auditing firewalls, sync commands across other coding packages, and orchestrate advanced background agent chains.
 
 <div align="center">
