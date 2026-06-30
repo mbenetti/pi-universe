@@ -231,7 +231,7 @@ For syncing workspaces across other coding tools and locking down agent operatio
 ---
 
 ### 🧬 Level 4: Pipelines & Multi-Agent Teams
-The highest tier. Deploys autonomous grid layouts, sequential pipes, background helpers, and deep RAG.
+The highest tier. Deploys autonomous grid layouts, sequential pipes, background helpers, and deep RAG. All Level 4 extensions are fully integrated with custom agent skills (located in `.pi/skills/`) to give the agent a deep, native understanding of how to use these tools.
 
 *   **`just ext-subagent-widget`** (Asynchronous Background Runs)
     *   *What it does:* Adds support for `/sub <task>` commands. Spawns headless sub-agents to digest isolated problems and displays streaming execution status cards above the main shell.
@@ -312,7 +312,7 @@ pi-universe/
 │   │   ├── agent-chain.yaml # Pipeline definition for agent-chain
 │   │   ├── teams.yaml   # Team definition for agent-team
 │   │   └── *.md         # Individual agent persona/system prompts
-│   ├── skills/          # Custom skills
+│   ├── skills/          # Custom skills (bowser, full-document-access, research-team, research-workflow, role-restricted-search, mcp-research, smart-web-search)
 │   ├── themes/          # Custom themes (.json) used by theme-cycler
 │   ├── damage-control-rules.yaml # Path/command rules for safety auditing
 │   └── settings.json    # Pi workspace settings
