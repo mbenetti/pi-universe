@@ -1,6 +1,9 @@
 set dotenv-load := true
 
 # Run Pi with the ZettelKasten protection extension
+ext-zettelkasten:
+    pi -ne -e ./extensions/zettelkasten-protection.ts
+
 run-zettelkasten:
     pi -ne -e ./extensions/zettelkasten-protection.ts
 
@@ -73,8 +76,16 @@ ext-agent-chain:
     pi -ne -e extensions/agent-chain.ts -e extensions/theme-cycler.ts
 
 # 14. Smart Search: Tavily primary, Ollama fallback (Tavily+minimal in settings.json)
-just ext-smart-search:
-    pi
+ext-smart-search:
+    pi -ne -e extensions/tavily-search.ts -e extensions/minimal.ts
+
+# 15. Langfuse Trace: real-time LLM tracing and observability
+ext-langfuse-trace:
+    pi -ne -e extensions/langfuse-trace.ts
+
+# 16. MCP Research: Model Context Protocol (MCP) client manager for Zotero, Google Scholar, and arXiv
+ext-mcp-research:
+    pi -ne -e extensions/mcp-research.ts
 
 #g3
 

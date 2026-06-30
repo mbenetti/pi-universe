@@ -152,12 +152,16 @@ alias pi-replay='pi -ne -e ~/.pi/agent/git/github.com/mbenetti/pi-universe/exten
 # Level 3: Personas & Security
 alias pi-system='pi -ne -e ~/.pi/agent/git/github.com/mbenetti/pi-universe/extensions/system-select.ts -e ~/.pi/agent/git/github.com/mbenetti/pi-universe/extensions/minimal.ts -e ~/.pi/agent/git/github.com/mbenetti/pi-universe/extensions/theme-cycler.ts'
 alias pi-safety='pi -ne -e ~/.pi/agent/git/github.com/mbenetti/pi-universe/extensions/damage-control.ts -e ~/.pi/agent/git/github.com/mbenetti/pi-universe/extensions/minimal.ts -e ~/.pi/agent/git/github.com/mbenetti/pi-universe/extensions/theme-cycler.ts'
+alias pi-trace='pi -ne -e ~/.pi/agent/git/github.com/mbenetti/pi-universe/extensions/langfuse-trace.ts'
+alias pi-zettel='pi -ne -e ~/.pi/agent/git/github.com/mbenetti/pi-universe/extensions/zettelkasten-protection.ts'
 
 # Level 4: Orchestration, Teams & Pipelines
 alias pi-team='pi -ne -e ~/.pi/agent/git/github.com/mbenetti/pi-universe/extensions/agent-team.ts -e ~/.pi/agent/git/github.com/mbenetti/pi-universe/extensions/theme-cycler.ts'
 alias pi-pi='pi -ne -e ~/.pi/agent/git/github.com/mbenetti/pi-universe/extensions/pi-pi.ts -e ~/.pi/agent/git/github.com/mbenetti/pi-universe/extensions/theme-cycler.ts'
 alias pi-chain='pi -ne -e ~/.pi/agent/git/github.com/mbenetti/pi-universe/extensions/agent-chain.ts -e ~/.pi/agent/git/github.com/mbenetti/pi-universe/extensions/theme-cycler.ts'
 alias pi-research='pi -ne -e ~/.pi/agent/git/github.com/mbenetti/pi-universe/extensions/research-pipeline.ts -e ~/.pi/agent/git/github.com/mbenetti/pi-universe/extensions/theme-cycler.ts'
+alias pi-mcp='pi -ne -e ~/.pi/agent/git/github.com/mbenetti/pi-universe/extensions/mcp-research.ts'
+alias pi-smartsearch='pi -ne -e ~/.pi/agent/git/github.com/mbenetti/pi-universe/extensions/tavily-search.ts -e ~/.pi/agent/git/github.com/mbenetti/pi-universe/extensions/minimal.ts'
 ```
 
 Once pasted, simply reload your terminal (`source ~/.zshrc` or `source ~/.bashrc`) and type **`pi-team`** or **`pi-pi`** from *any* folder on your machine!
@@ -217,6 +221,12 @@ For syncing workspaces across other coding tools and locking down agent operatio
 *   **`just ext-damage-control`** (Command Restricting Firewalls)
     *   *What it does:* Runs absolute safety audits on destructive terminal actions (regex checks for `rm`, `git reset`, DB deletions, and sensitive path access) and halts execution to ask for developer authorization.
     *   *Theme default:* `Gruvbox`
+*   **`just ext-langfuse-trace`** (Real-Time LLM Tracing & Observability)
+    *   *What it does:* Integrates Langfuse to trace LLM calls, tool executions, and agent turns in real-time, providing deep visibility into agent reasoning and token usage.
+    *   *Theme default:* `Midnight Ocean`
+*   **`just ext-zettelkasten`** (Zettelkasten Integrity Firewall)
+    *   *What it does:* Implements a custom safety firewall specifically for Zettelkasten research vaults, blocking any accidental file deletions (`rm` or `rmdir`) outside of the `3-Archives` folder.
+    *   *Theme default:* `Everforest`
 
 ---
 
@@ -238,6 +248,12 @@ The highest tier. Deploys autonomous grid layouts, sequential pipes, background 
 *   **`just ext-research-pipeline`** (Specialized Academic Search)
     *   *What it does:* High-context optimizer. Resolves paper abstracts, indexes citations, and pulls deep chunks via background sub-agents instead of dumping heavy PDFs into your active context limit.
     *   *Theme default:* `Midnight Ocean`
+*   **`just ext-mcp-research`** (Model Context Protocol Client Manager)
+    *   *What it does:* Implements an MCP client manager that connects to servers like Zotero, Google Scholar, and arXiv via standard input/output, registering custom tools and commands for academic research.
+    *   *Theme default:* `Catppuccin Mocha`
+*   **`just ext-smart-search`** (Smart Web Search with Fallbacks)
+    *   *What it does:* Registers a smart web search tool that queries the Tavily API first (fast, AI-optimized) and automatically falls back to Ollama local web search if Tavily fails or is rate-limited.
+    *   *Theme default:* `Synthwave`
 
 ---
 
@@ -268,6 +284,10 @@ just ext-agent-chain        # Sequential pipeline orchestrator with step chainin
 just ext-pi-pi              # Meta-agent that builds Pi agents using parallel experts
 just ext-session-replay     # Scrollable timeline overlay of session history
 just ext-theme-cycler       # Theme cycler + minimal footer
+just ext-langfuse-trace     # Real-time LLM tracing and observability via Langfuse
+just ext-zettelkasten       # Zettelkasten integrity safety firewall
+just ext-mcp-research       # Model Context Protocol (MCP) client manager for academic search
+just ext-smart-search       # Smart web search with automatic fallback to Ollama
 just all                    # Open every extension in its own terminal window
 ```
 
@@ -282,7 +302,7 @@ just open purpose-gate minimal tool-counter-widget
 ## Project Structure
 
 ```
-pi-vs-cc/
+pi-universe/
 ├── extensions/          # Pi extension source files (.ts) — one file per extension
 ├── specs/               # Feature specifications for extensions
 ├── .pi/
