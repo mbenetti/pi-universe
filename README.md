@@ -297,7 +297,6 @@ pi-vs-cc/
 │   ├── damage-control-rules.yaml # Path/command rules for safety auditing
 │   └── settings.json    # Pi workspace settings
 ├── justfile             # just task definitions
-├── CLAUDE.md            # Conventions and tooling reference (for agents)
 ├── THEME.md             # Color token conventions for extension authors
 └── TOOLS.md             # Built-in tool function signatures available in extensions
 ```

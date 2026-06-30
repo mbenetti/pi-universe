@@ -249,7 +249,6 @@ readOnlyPaths:
 noDeletePaths:
   - "/Users/maurobenetti/Documents/Datascience/ZettleKasten_research/*"
   - ~/.claude/
-  - CLAUDE.md
   - "LICENSE"
   - "LICENSE.*"
   - "COPYING"
