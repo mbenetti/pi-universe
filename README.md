@@ -63,6 +63,46 @@ just ext-minimal  # works for all recipes, not just `pi`
 
 ---
 
+## 🔌 Integration Setup (Tavily, Ollama, MCP)
+
+To fully utilize the advanced Level 4 extensions, you need to configure their respective integrations:
+
+### 1. Tavily Search & Extract
+The `ext-smart-search` and `ext-research-pipeline` extensions use Tavily for fast, AI-optimized web search and content extraction.
+* **Get a Key**: Register at [tavily.com](https://tavily.com) to get a free API key.
+* **Configure**: Add the key to your `.env` file:
+  ```bash
+  export TAVILY_API_KEY="your_tavily_api_key"
+  ```
+
+### 2. Ollama Local Web Search (Fallback)
+If Tavily is unavailable or rate-limited, `ext-smart-search` automatically falls back to your local Ollama instance.
+* **Prerequisites**: Ensure Ollama is running locally on `http://localhost:11434`.
+* **Enable Web Search**: Ensure your local Ollama model has the experimental web search capability enabled.
+
+### 3. Zotero & Google Scholar MCP Servers
+The `ext-mcp-research` extension connects to Zotero, Google Scholar, and arXiv via the Model Context Protocol (MCP).
+* **Zotero Setup**:
+  * The extension automatically runs the Zotero MCP server on-demand via `npx`.
+  * You must set your Zotero API credentials in your `.env` file:
+    ```bash
+    export ZOTERO_API_KEY="your_zotero_api_key"
+    export ZOTERO_USER_ID="your_zotero_user_id" # or ZOTERO_GROUP_ID
+    ```
+* **Google Scholar Setup**:
+  * The extension automatically runs the Google Scholar MCP server via `npx`.
+  * It requires a SerpAPI key to fetch search results. Add it to your `.env` file:
+    ```bash
+    export SERPAPI_API_KEY="your_serpapi_api_key"
+    ```
+* **arXiv Setup**:
+  * The arXiv MCP server runs via Python. Install the package locally:
+    ```bash
+    pip install mcp-arxiv
+    ```
+
+---
+
 ## Installation
 
 You can deploy and use this extension suite either by installing it as a global package across any computer (quickest route) or by cloning the repository for local development.
